@@ -20,77 +20,90 @@ def generate_readme():
     for cfg in data["configs"]:
         grouped[cfg["category"]].append(cfg)
 
+    total_configs = sum(cfg["count"] for cfg in data["configs"])
+    updated = data["updated"][:16].replace("T", " ")
+
     lines = []
-    lines.append("# VPN configs")
+
+    lines.append("# VPN White-Lists для России")
     lines.append("")
-    lines.append("> Auto-update every 3 hours | Last: " + data["updated"])
-    lines.append("> Working sources: " + str(data["success"]) + " / " + str(data["total_sources"]))
+    lines.append("> **Последнее обновление:** `" + updated + " UTC`")
+    lines.append(">")
+    lines.append("> Источников: **" + str(data["success"]) + "** из **" + str(data["total_sources"]) + "**  |  Конфигураций: **" + str(total_configs) + "**")
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("## Apps")
+    lines.append("## Как использовать")
     lines.append("")
-    lines.append("| App | Link | Supports |")
-    lines.append("|-----|------|----------|")
-    lines.append("| **Nekobox** | [nekobox.one](https://nekobox.one) | VLESS, VMess, Trojan, SS, Reality |")
-    lines.append("| **V2RayNG** | [getv2rayng.com](https://getv2rayng.com) | VLESS, VMess, Trojan, SS |")
-    lines.append("| **Happ VPN** | [happ.su](https://happ.su) | VLESS, Trojan, TOR Bridges |")
+    lines.append("1. Найди нужный файл в таблице ниже")
+    lines.append("2. Нажми **Скачать** — откроется прямая ссылка на файл")
+    lines.append("3. Импортируй ссылку в приложение")
+    lines.append("")
+    lines.append("| Приложение | Платформа | Ссылка |")
+    lines.append("|------------|-----------|--------|")
+    lines.append("| Nekobox | Android | [nekobox.one](https://nekobox.one) |")
+    lines.append("| V2RayNG | Android | [play.google.com](https://play.google.com/store/apps/details?id=com.v2ray.ang) |")
+    lines.append("| Happ VPN | Android / iOS | [happ.su](https://happ.su) |")
     lines.append("")
     lines.append("---")
     lines.append("")
 
-    category_names = {
-        "nekobox": "Nekobox Configs",
-        "v2ray": "V2RayNG Configs",
-        "happ": "Happ VPN Configs"
+    category_info = {
+        "nekobox": "Nekobox — Белые листы, CIDR, VLESS, Reality",
+        "v2ray":   "V2RayNG — VLESS, VMess, Trojan, Shadowsocks",
+        "happ":    "Happ VPN — VLESS, Trojan, TOR Bridges",
     }
 
-    for cat, configs in grouped.items():
-        lines.append("### " + category_names.get(cat, cat.upper()))
+    for cat in ["nekobox", "v2ray", "happ"]:
+        configs = grouped.get(cat, [])
+        if not configs:
+            continue
+
+        cat_total = sum(c["count"] for c in configs)
+        lines.append("## " + category_info.get(cat, cat.upper()))
         lines.append("")
+        lines.append("Файлов: **" + str(len(configs)) + "**  |  Конфигураций: **" + str(cat_total) + "**")
+        lines.append("")
+        lines.append("| Название | Конфигов | Размер | Обновлено | Скачать |")
+        lines.append("|----------|----------|--------|-----------|---------|")
+
         for cfg in configs:
-            lines.append("<details>")
-            lines.append("<summary><b>" + cfg["name"] + "</b> — " + str(cfg["count"]) + " configs, " + str(cfg["size_kb"]) + " KB, " + cfg["updated"] + "</summary>")
-            lines.append("")
-            lines.append("| Parameter | Value |")
-            lines.append("|-----------|-------|")
-            lines.append("| File | " + cfg["filename"] + " |")
-            lines.append("| Source | " + cfg["url"] + " |")
-            lines.append("| Configs | " + str(cfg["count"]) + " |")
-            lines.append("| Hash | " + cfg["hash"] + " |")
-            lines.append("| Download | [configs/" + cfg["category"] + "/" + cfg["filename"] + "](configs/" + cfg["category"] + "/" + cfg["filename"] + ") |")
-            lines.append("")
-            lines.append("</details>")
-            lines.append("")
+            raw_url = (
+                "https://gitverse.ru/RUVIPIEN/russian-white-bolt"
+                "/raw/branch/master/configs/"
+                + cfg["category"] + "/" + cfg["filename"]
+            )
+            lines.append(
+                "| **" + cfg["name"] + "**"
+                + " | `" + str(cfg["count"]) + "`"
+                + " | `" + str(cfg["size_kb"]) + " KB`"
+                + " | `" + cfg["updated"] + "`"
+                + " | [Скачать](" + raw_url + ") |"
+            )
+
+        lines.append("")
 
     if data["errors"]:
-        lines.append("### Unavailable sources")
+        lines.append("---")
         lines.append("")
+        lines.append("## Временно недоступны (" + str(len(data["errors"])) + ")")
+        lines.append("")
+        lines.append("| Источник | Ошибка |")
+        lines.append("|----------|--------|")
         for err in data["errors"]:
-            lines.append("- " + err["name"] + " — " + err["error"][:80])
+            short_err = err["error"][:60] + "..." if len(err["error"]) > 60 else err["error"]
+            lines.append("| " + err["name"] + " | `" + short_err + "` |")
         lines.append("")
-        lines.append("> Will be retried on next update.")
+        lines.append("> Будут проверены при следующем обновлении.")
         lines.append("")
 
     lines.append("---")
     lines.append("")
-    lines.append("## How auto-update works")
+    lines.append("Репозиторий автоматически обновляется каждые 3 часа через GitVerse CI/CD.")
     lines.append("")
-    lines.append("1. GitVerse Actions runs every 3 hours")
-    lines.append("2. Script downloads all sources")
-    lines.append("3. Parses and counts valid configs")
-    lines.append("4. Generates this README")
-    lines.append("5. Pushes changes to repo")
+    lines.append("Добавить источник: отредактируй `sources/urls.txt` в формате `URL|CATEGORY|NAME`")
     lines.append("")
-    lines.append("## Add your source")
-    lines.append("")
-    lines.append("1. Edit sources/urls.txt")
-    lines.append("2. Format: URL|CATEGORY|NAME")
-    lines.append("3. CATEGORY: nekobox | v2ray | happ")
-    lines.append("")
-    lines.append("---")
-    lines.append("")
-    lines.append("> Updated: " + datetime.now().strftime("%Y-%m-%d %H:%M UTC"))
+    lines.append("*Обновлено: " + datetime.now().strftime("%Y-%m-%d %H:%M UTC") + "*")
 
     with open("README.md", "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
