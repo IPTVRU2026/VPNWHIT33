@@ -10,7 +10,7 @@ from collections import defaultdict
 def generate_readme():
     meta_path = Path("configs/metadata.json")
     if not meta_path.exists():
-        print("metadata.json not found. Run fetch_configs.py first")
+        print("metadata.json nhot found. Run fetch_configs.py first")
         return
 
     with open(meta_path, "r", encoding="utf-8") as f:
