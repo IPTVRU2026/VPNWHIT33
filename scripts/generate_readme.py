@@ -20,34 +20,24 @@ def generate_readme():
     for cfg in data["configs"]:
         grouped[cfg["category"]].append(cfg)
 
-    readme = "# VPN configs
-
-"
-    readme += "> Auto-update every 3 hours | Last: " + data["updated"] + "
-"
-    readme += "> Working sources: " + str(data["success"]) + " / " + str(data["total_sources"]) + "
-
-"
-    readme += "---
-
-"
-    readme += "## Apps
-
-"
-    readme += "| App | Link | Supports |
-"
-    readme += "|-----|------|----------|
-"
-    readme += "| **Nekobox** | [nekobox.one](https://nekobox.one) | VLESS, VMess, Trojan, SS, Reality |
-"
-    readme += "| **V2RayNG** | [getv2rayng.com](https://getv2rayng.com) | VLESS, VMess, Trojan, SS |
-"
-    readme += "| **Happ VPN** | [happ.su](https://happ.su) | VLESS, Trojan, TOR Bridges |
-"
-    readme += "
----
-
-"
+    lines = []
+    lines.append("# VPN configs")
+    lines.append("")
+    lines.append("> Auto-update every 3 hours | Last: " + data["updated"])
+    lines.append("> Working sources: " + str(data["success"]) + " / " + str(data["total_sources"]))
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    lines.append("## Apps")
+    lines.append("")
+    lines.append("| App | Link | Supports |")
+    lines.append("|-----|------|----------|")
+    lines.append("| **Nekobox** | [nekobox.one](https://nekobox.one) | VLESS, VMess, Trojan, SS, Reality |")
+    lines.append("| **V2RayNG** | [getv2rayng.com](https://getv2rayng.com) | VLESS, VMess, Trojan, SS |")
+    lines.append("| **Happ VPN** | [happ.su](https://happ.su) | VLESS, Trojan, TOR Bridges |")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
 
     category_names = {
         "nekobox": "Nekobox Configs",
@@ -56,81 +46,54 @@ def generate_readme():
     }
 
     for cat, configs in grouped.items():
-        readme += "### " + category_names.get(cat, cat.upper()) + "
-
-"
+        lines.append("### " + category_names.get(cat, cat.upper()))
+        lines.append("")
         for cfg in configs:
-            readme += "<details>
-"
-            readme += "<summary><b>" + cfg["name"] + "</b> — " + str(cfg["count"]) + " configs, " + str(cfg["size_kb"]) + " KB, " + cfg["updated"] + "</summary>
-
-"
-            readme += "| Parameter | Value |
-"
-            readme += "|-----------|-------|
-"
-            readme += "| File | " + cfg["filename"] + " |
-"
-            readme += "| Source | " + cfg["url"] + " |
-"
-            readme += "| Configs | " + str(cfg["count"]) + " |
-"
-            readme += "| Hash | " + cfg["hash"] + " |
-"
-            readme += "| Download | [configs/" + cfg["category"] + "/" + cfg["filename"] + "](configs/" + cfg["category"] + "/" + cfg["filename"] + ") |
-"
-            readme += "
-</details>
-
-"
+            lines.append("<details>")
+            lines.append("<summary><b>" + cfg["name"] + "</b> — " + str(cfg["count"]) + " configs, " + str(cfg["size_kb"]) + " KB, " + cfg["updated"] + "</summary>")
+            lines.append("")
+            lines.append("| Parameter | Value |")
+            lines.append("|-----------|-------|")
+            lines.append("| File | " + cfg["filename"] + " |")
+            lines.append("| Source | " + cfg["url"] + " |")
+            lines.append("| Configs | " + str(cfg["count"]) + " |")
+            lines.append("| Hash | " + cfg["hash"] + " |")
+            lines.append("| Download | [configs/" + cfg["category"] + "/" + cfg["filename"] + "](configs/" + cfg["category"] + "/" + cfg["filename"] + ") |")
+            lines.append("")
+            lines.append("</details>")
+            lines.append("")
 
     if data["errors"]:
-        readme += "### Unavailable sources
-
-"
+        lines.append("### Unavailable sources")
+        lines.append("")
         for err in data["errors"]:
-            readme += "- " + err["name"] + " — " + err["error"][:80] + "
-"
-        readme += "
-> Will be retried on next update.
+            lines.append("- " + err["name"] + " — " + err["error"][:80])
+        lines.append("")
+        lines.append("> Will be retried on next update.")
+        lines.append("")
 
-"
-
-    readme += "---
-
-"
-    readme += "## How auto-update works
-
-"
-    readme += "1. GitVerse Actions runs every 3 hours
-"
-    readme += "2. Script downloads all sources
-"
-    readme += "3. Parses and counts valid configs
-"
-    readme += "4. Generates this README
-"
-    readme += "5. Pushes changes to repo
-
-"
-    readme += "## Add your source
-
-"
-    readme += "1. Edit sources/urls.txt
-"
-    readme += "2. Format: URL|CATEGORY|NAME
-"
-    readme += "3. CATEGORY: nekobox | v2ray | happ
-
-"
-    readme += "---
-
-"
-    readme += "> Updated: " + datetime.now().strftime("%Y-%m-%d %H:%M UTC") + "
-"
+    lines.append("---")
+    lines.append("")
+    lines.append("## How auto-update works")
+    lines.append("")
+    lines.append("1. GitVerse Actions runs every 3 hours")
+    lines.append("2. Script downloads all sources")
+    lines.append("3. Parses and counts valid configs")
+    lines.append("4. Generates this README")
+    lines.append("5. Pushes changes to repo")
+    lines.append("")
+    lines.append("## Add your source")
+    lines.append("")
+    lines.append("1. Edit sources/urls.txt")
+    lines.append("2. Format: URL|CATEGORY|NAME")
+    lines.append("3. CATEGORY: nekobox | v2ray | happ")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    lines.append("> Updated: " + datetime.now().strftime("%Y-%m-%d %H:%M UTC"))
 
     with open("README.md", "w", encoding="utf-8") as f:
-        f.write(readme)
+        f.write("\n".join(lines) + "\n")
 
     print("README.md generated successfully")
 
