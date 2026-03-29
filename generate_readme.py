@@ -1,4 +1,4 @@
-#!/usr/bin/env python3о
+#!/usr/bin/env python3оh
 # -*- coding: utf-8 -*-
 
 import json
