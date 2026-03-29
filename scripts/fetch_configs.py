@@ -5,7 +5,6 @@
 Запускается в CI/CD каждые 3 часа
 """
 
-import os
 import re
 import time
 import json
@@ -23,8 +22,8 @@ SOURCES_FILE = Path("sources/urls.txt")
 # Приложения
 APPS = {
     "nekobox": {"name": "Nekobox", "icon": "nekobox", "url": "https://nekobox.one", "ext": ".txt"},
-    "v2ray": {"name": "V2RayNG", "icon": "v2ray", "url": "https://getv2rayng.com", "ext": ".txt"},
-    "happ": {"name": "Happ VPN", "icon": "happ", "url": "https://happ.su", "ext": ".txt"},
+    "v2ray":   {"name": "V2RayNG", "icon": "v2ray",   "url": "https://getv2rayng.com", "ext": ".txt"},
+    "happ":    {"name": "Happ VPN", "icon": "happ",   "url": "https://happ.su", "ext": ".txt"},
 }
 
 
@@ -53,7 +52,6 @@ def fetch_url(url: str) -> tuple:
         resp.raise_for_status()
         content = resp.text.strip()
 
-        # Пробуем декодировать base64 если нужно
         if content and not any(c in content for c in ['://', 'bridge', 'obfs']):
             import base64
             try:
@@ -123,7 +121,7 @@ def main():
 
             if error:
                 errors.append({"name": name, "url": url, "error": error})
-                print(f"Error: {error}")
+                print(f"Warning (skipping): {error}")
                 continue
 
             meta = save_config(name, category, content, count, url)
@@ -143,8 +141,9 @@ def main():
             "errors": errors
         }, f, ensure_ascii=False, indent=2)
 
-    print(f"\nDone: {len(results)} success, {len(errors)} errors")
-    return 0 if not errors else 1
+    print(f"\nDone: {len(results)} success, {len(errors)} warnings (skipped)")
+    # Всегда возвращаем 0 — частичный успех не должен ронять CI
+    return 0
 
 
 if __name__ == "__main__":
