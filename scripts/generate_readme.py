@@ -1,361 +1,459 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Генератор красивого README.md для VPN репозитория
-Создает структурированный документ со всеми ссылками и информацией
+Генератор README.md для VPN White-Lists
+Использует GitVerse API для прямых ссылок на файлы + превью иконок VPN
 """
 
+import os
 import json
 import re
-from pathlib import Path
 from datetime import datetime
-from collections import defaultdict
+from pathlib import Path
 
-METADATA_FILE = Path("VPNMIRRORS/metadata.json")
-README_FILE = Path("README.md")
+# Конфигурация
+REPO_OWNER = "RUVIPIEN"
+REPO_NAME = "russian-white-bolt"
+BRANCH = "master"
 
-# Информация о VPN приложениях
-APPS_INFO = {
-    "nekobox": {
-        "name": "Nekoray / Nekobox",
-        "icon": "📦",
-        "badge": "![Nekobox](https://img.shields.io/badge/Nekobox-0099FF?style=flat&logo=android&logoColor=white)",
-        "platforms": ["Windows", "Android"],
-        "download_url": "https://nekobox.one",
-        "description": "Продвинутый клиент с поддержкой VLESS, VMess, Reality, White Lists и CIDR",
-        "color": "0099FF"
+# Категории и их описания + соответствие файлам фото
+CATEGORIES = {
+    'nekobox': {
+        'icon': '📦',
+        'name': 'Nekoray / Nekobox',
+        'photo': 'Nekoray.png',
+        'description': 'Продвинутый клиент с поддержкой VLESS, VMess, Reality, White Lists и CIDR'
     },
-    "v2ray": {
-        "name": "V2RayNG / V2RayN",
-        "icon": "🚀",
-        "badge": "![V2Ray](https://img.shields.io/badge/V2Ray-00A4E4?style=flat&logo=android&logoColor=white)",
-        "platforms": ["Android", "Windows", "iOS"],
-        "download_url": "https://getv2rayng.com",
-        "description": "Популярный клиент для VLESS, VMess, Trojan, Shadowsocks",
-        "color": "00A4E4"
+    'v2ray': {
+        'icon': '🚀',
+        'name': 'V2RayNG / V2RayN',
+        'photo': 'V2RayNG.png',
+        'description': 'Популярный клиент для VLESS, VMess, Trojan, Shadowsocks'
     },
-    "happ": {
-        "name": "Happ VPN",
-        "icon": "🔒",
-        "badge": "![Happ](https://img.shields.io/badge/Happ%20VPN-FF6B6B?style=flat&logo=android&logoColor=white)",
-        "platforms": ["Android", "iOS"],
-        "download_url": "https://happ.su",
-        "description": "Простой VPN с поддержкой VLESS, Trojan и TOR Bridges",
-        "color": "FF6B6B"
+    'happ': {
+        'icon': '🔒',
+        'name': 'Happ VPN',
+        'photo': 'Happ.png',
+        'description': 'Простой VPN с поддержкой VLESS, Trojan и TOR Bridges'
     },
-    "singbox": {
-        "name": "Sing-box",
-        "icon": "📱",
-        "badge": "![Sing-box](https://img.shields.io/badge/Sing--box-8B5CF6?style=flat&logo=linux&logoColor=white)",
-        "platforms": ["Android", "iOS", "Windows", "macOS", "Linux"],
-        "download_url": "https://sing-box.sagernet.org",
-        "description": "Универсальная платформа проксирования",
-        "color": "8B5CF6"
+    'singbox': {
+        'icon': '📱',
+        'name': 'Sing-box',
+        'photo': 'Sing-box.png',
+        'description': 'Универсальная платформа проксирования'
     },
-    "clash": {
-        "name": "Clash / ClashMeta",
-        "icon": "⚔️",
-        "badge": "![Clash](https://img.shields.io/badge/Clash-FD7E14?style=flat&logo=windows&logoColor=white)",
-        "platforms": ["Windows", "macOS", "Linux", "Android"],
-        "download_url": "https://github.com/MetaCubeX/Clash.Meta",
-        "description": "Rule-based tunnel с продвинутой маршрутизацией",
-        "color": "FD7E14"
+    'clash': {
+        'icon': '⚔️',
+        'name': 'Clash / ClashMeta',
+        'photo': 'Clash.png',
+        'description': 'Rule-based tunnel с продвинутой маршрутизацией'
     },
-    "tor": {
-        "name": "TOR Browser",
-        "icon": "🧅",
-        "badge": "![TOR](https://img.shields.io/badge/TOR-7D4698?style=flat&logo=tor-browser&logoColor=white)",
-        "platforms": ["Windows", "macOS", "Linux", "Android"],
-        "download_url": "https://torproject.org",
-        "description": "TOR Bridges и Snowflake для обхода блокировок",
-        "color": "7D4698"
+    'tor': {
+        'icon': '🧅',
+        'name': 'TOR Bridges',
+        'photo': None,  # У TOR нет фото
+        'description': 'Мосты для обхода блокировок TOR'
     }
 }
 
+def generate_api_url(file_path: str) -> str:
+    """Генерирует правильную API-ссылку GitVerse для скачивания файла"""
+    clean_path = file_path.lstrip('./')
+    return f"https://gitverse.ru/api/repos/{REPO_OWNER}/{REPO_NAME}/raw/branch/{BRANCH}/{clean_path}"
 
-def get_gitverse_raw_url(category: str, filename: str) -> str:
-    """Генерирует прямую ссылку на файл в GitVerse"""
-    # Формат для GitVerse: /raw/branch/master/path/to/file
-    return f"https://gitverse.ru/RUVIPIEN/russian-white-bolt/raw/branch/master/VPNMIRRORS/{category}/{filename}"
+def generate_photo_url(photo_filename: str) -> str:
+    """Генерирует ссылку на фото в папке foto/"""
+    return f"https://gitverse.ru/api/repos/{REPO_OWNER}/{REPO_NAME}/raw/branch/{BRANCH}/foto/{photo_filename}"
 
+def format_size(size_bytes: int) -> str:
+    """Форматирует размер файла"""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.2f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.2f} MB"
 
 def format_number(num: int) -> str:
-    """Форматирует число с разделителями тысяч"""
+    """Форматирует число с пробелами"""
     return f"{num:,}".replace(",", " ")
 
+def format_file_name(filename: str) -> str:
+    """Преобразует имя файла в читаемое название"""
+    name = re.sub(r'_[a-f0-9]{6}$', '', filename)
+    name = name.replace('_', ' ')
+    return name.title()
 
-def generate_platform_badges(platforms: list) -> str:
-    """Генерирует бейджи платформ"""
+def parse_protocols(protocols_str: str) -> dict:
+    """Парсит строку протоколов"""
+    protocols = {}
+    if not protocols_str:
+        return protocols
+    matches = re.findall(r'(\w+):\s*(\d+)', protocols_str)
+    for proto, count in matches:
+        protocols[proto] = int(count)
+    return protocols
+
+def format_protocols_badge(protocols: dict) -> str:
+    """Форматирует бейджи протоколов"""
+    if not protocols:
+        return "`Configs: 0`"
     badges = []
-    platform_icons = {
-        "Windows": "💻",
-        "Android": "📱",
-        "iOS": "🍎",
-        "macOS": "🖥️",
-        "Linux": "🐧"
-    }
-    for platform in platforms:
-        icon = platform_icons.get(platform, "📱")
-        badges.append(f"{icon} {platform}")
+    priority = ['VLESS', 'VMess', 'Trojan', 'SS', 'Hysteria', 'Other']
+    for proto in priority:
+        if proto in protocols:
+            badges.append(f"`{proto}: {protocols[proto]}`")
+    for proto, count in protocols.items():
+        if proto not in priority:
+            badges.append(f"`{proto}: {count}`")
     return " ".join(badges)
 
+def load_metadata() -> dict:
+    """Загружает метаданные"""
+    metadata_path = Path("VPNMIRRORS/metadata.json")
+    if metadata_path.exists():
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
 
-def generate_config_badges(counts: dict) -> str:
-    """Генерирует бейджи с количеством конфигов по протоколам"""
-    badges = []
-    protocols = [
-        ("vless", "VLESS", "blue"),
-        ("vmess", "VMess", "green"),
-        ("trojan", "Trojan", "red"),
-        ("ss", "SS", "orange"),
-        ("hysteria", "Hysteria", "purple"),
+def scan_vpn_files() -> dict:
+    """Сканирует директорию VPNMIRRORS"""
+    files_by_category = {}
+    base_path = Path("VPNMIRRORS")
+    
+    if not base_path.exists():
+        return files_by_category
+    
+    for category_dir in base_path.iterdir():
+        if category_dir.is_dir() and category_dir.name != "__pycache__":
+            category = category_dir.name
+            files_by_category[category] = []
+            
+            for file_path in category_dir.glob("*.txt"):
+                if file_path.name == "metadata.json":
+                    continue
+                    
+                stat = file_path.stat()
+                file_info = {
+                    'filename': file_path.name,
+                    'name': format_file_name(file_path.stem),
+                    'path': str(file_path),
+                    'size': stat.st_size,
+                    'size_formatted': format_size(stat.st_size),
+                    'modified': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M UTC'),
+                    'protocols': {},
+                    'total_configs': 0
+                }
+                files_by_category[category].append(file_info)
+    
+    for category in files_by_category:
+        files_by_category[category].sort(key=lambda x: x['filename'])
+    
+    return files_by_category
+
+def merge_with_metadata(files_by_category: dict, metadata: dict) -> dict:
+    """Объединяет с метаданными"""
+    for category, files in files_by_category.items():
+        for file_info in files:
+            meta_files = metadata.get('files', {}).get(category, [])
+            for meta_file in meta_files:
+                if meta_file.get('filename') == file_info['filename']:
+                    file_info['protocols'] = meta_file.get('protocols', {})
+                    file_info['total_configs'] = meta_file.get('total_configs', 0)
+                    file_info['name'] = meta_file.get('name', file_info['name'])
+                    break
+    return files_by_category
+
+def count_total_configs(files_by_category: dict) -> int:
+    """Подсчитывает общее количество конфигураций"""
+    return sum(
+        f.get('total_configs', 0) 
+        for files in files_by_category.values() 
+        for f in files
+    )
+
+def generate_vpn_preview_section() -> list:
+    """Генерирует секцию с иконками-превью VPN приложений"""
+    lines = [
+        "## 📱 VPN Приложения",
+        "",
+        "> Выберите приложение для вашей платформы и импортируйте конфигурации из таблиц ниже",
+        "> **Нажмите на иконку 👁️ чтобы увидеть скриншот приложения**",
+        "",
+        "| Приложение | Платформы | Описание | Скачать | Превью |",
+        "|------------|-----------|----------|---------|--------|"
     ]
     
-    for key, name, color in protocols:
-        if counts.get(key, 0) > 0:
-            badges.append(f"`{name}: {counts[key]}`")
+    vpn_apps = [
+        {
+            'key': 'nekobox',
+            'platforms': '💻 Windows 📱 Android',
+            'download': 'https://nekobox.one'
+        },
+        {
+            'key': 'v2ray', 
+            'platforms': '📱 Android 💻 Windows 🍎 iOS',
+            'download': 'https://getv2rayng.com'
+        },
+        {
+            'key': 'happ',
+            'platforms': '📱 Android 🍎 iOS', 
+            'download': 'https://happ.su'
+        },
+        {
+            'key': 'singbox',
+            'platforms': '📱 Android 🍎 iOS 💻 Windows 🖥️ macOS 🐧 Linux',
+            'download': 'https://sing-box.sagernet.org'
+        },
+        {
+            'key': 'clash',
+            'platforms': '💻 Windows 🖥️ macOS 🐧 Linux 📱 Android',
+            'download': 'https://github.com/MetaCubeX/Clash.Meta'
+        }
+    ]
     
-    if counts.get("other", 0) > 0:
-        badges.append(f"`Other: {counts['other']}`")
+    for app in vpn_apps:
+        cat_info = CATEGORIES.get(app['key'], {})
+        name = cat_info.get('name', app['key'])
+        description = cat_info.get('description', '')
+        photo = cat_info.get('photo')
+        
+        # Генерируем ссылку на фото если есть
+        if photo:
+            photo_url = generate_photo_url(photo)
+            # 👁️ иконка с ссылкой на фото
+            preview_badge = f"[👁️ Открыть фото]({photo_url})"
+        else:
+            preview_badge = "—"
+        
+        lines.append(
+            f"| {cat_info.get('icon', '📱')} **{name}** | "
+            f"{app['platforms']} | {description} | "
+            f"[⬇️ Скачать]({app['download']}) | {preview_badge} |"
+        )
     
-    return " ".join(badges) if badges else "`Configs: {counts.get('total', 0)}`"
+    return lines
 
-
-def generate_readme():
-    """Основная функция генерации README"""
+def generate_readme(files_by_category: dict, metadata: dict) -> str:
+    """Генерирует содержимое README.md"""
     
-    if not METADATA_FILE.exists():
-        print(f"❌ Error: {METADATA_FILE} not found. Run fetch_configs.py first!")
-        return False
+    total_files = sum(len(files) for files in files_by_category.values())
+    total_configs = count_total_configs(files_by_category)
+    total_sources = metadata.get('total_sources', 0)
+    working_sources = metadata.get('working_sources', 0)
+    failed_sources = metadata.get('failed_sources', [])
+    update_time = datetime.now().strftime('%Y-%m-%d %H:%M MSK')
     
-    with open(METADATA_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    lines = [
+        "# 🌐 VPN White-Lists для России",
+        "",
+        "<div align=\"center\">",
+        "",
+        "![Auto Update](https://img.shields.io/badge/Auto%20Update-Every%203%20Hours-brightgreen?style=for-the-badge)",
+        f"![Configs](https://img.shields.io/badge/Configs-{total_configs}-blue?style=for-the-badge)",
+        f"![Sources](https://img.shields.io/badge/Sources-{working_sources}%2F{total_sources}-orange?style=for-the-badge)",
+        "",
+        "</div>",
+        "",
+        "## 📊 Информация",
+        "",
+        "| Параметр | Значение |",
+        "|----------|----------|",
+        f"| 🕐 **Последнее обновление** | `{update_time}` |",
+        f"| 📁 **Всего файлов** | `{total_files}` |",
+        f"| 🔗 **Всего конфигураций** | `{format_number(total_configs)}` |",
+        f"| ✅ **Рабочих источников** | `{working_sources}` |",
+        f"| ❌ **Недоступных источников** | `{len(failed_sources)}` |",
+        "",
+        "---",
+        ""
+    ]
     
-    # Группируем конфиги по категориям
-    grouped = defaultdict(list)
-    for cfg in data["configs"]:
-        grouped[cfg["category"]].append(cfg)
+    # === VPN ПРИЛОЖЕНИЯ С ПРЕВЬЮ ===
+    lines.extend(generate_vpn_preview_section())
     
-    # Статистика
-    total_configs = data.get("total_configs", 0)
-    total_files = len(data["configs"])
-    success_sources = data.get("success", 0)
-    failed_sources = data.get("failed", 0)
-    updated = data.get("updated_msk", data.get("updated_formatted", "Unknown"))
+    lines.extend([
+        "",
+        "---",
+        "",
+        "## 🚀 Быстрый старт",
+        "",
+        "1. **Выберите приложение** из таблицы выше и установите его",
+        "2. **Нажмите на 👁️ иконку** чтобы посмотреть скриншот приложения",
+        "3. **Найдите нужный конфиг** в разделах ниже",
+        "4. **Нажмите на ссылку \"⬇️ Скачать\"**",
+        "5. **Импортируйте** ссылку или файл в ваше VPN приложение",
+        "",
+        "> 💡 **Совет:** Конфигурации обновляются автоматически каждые 3 часа!",
+        "",
+        "---",
+        "",
+        "## 📂 Конфигурации по категориям",
+        ""
+    ])
     
-    lines = []
-    
-    # ===== HEADER =====
-    lines.append("# 🌐 VPN White-Lists для России")
-    lines.append("")
-    lines.append("<div align=\"center\">")
-    lines.append("")
-    lines.append("![Auto Update](https://img.shields.io/badge/Auto%20Update-Every%203%20Hours-brightgreen?style=for-the-badge)")
-    lines.append(f"![Configs](https://img.shields.io/badge/Configs-{total_configs}-blue?style=for-the-badge)")
-    lines.append(f"![Sources](https://img.shields.io/badge/Sources-{success_sources}%2F{success_sources+failed_sources}-orange?style=for-the-badge)")
-    lines.append("")
-    lines.append("</div>")
-    lines.append("")
-    
-    # ===== INFO BLOCK =====
-    lines.append("## 📊 Информация")
-    lines.append("")
-    lines.append("| Параметр | Значение |")
-    lines.append("|----------|----------|")
-    lines.append(f"| 🕐 **Последнее обновление** | `{updated}` |")
-    lines.append(f"| 📁 **Всего файлов** | `{total_files}` |")
-    lines.append(f"| 🔗 **Всего конфигураций** | `{format_number(total_configs)}` |")
-    lines.append(f"| ✅ **Рабочих источников** | `{success_sources}` |")
-    if failed_sources > 0:
-        lines.append(f"| ❌ **Недоступных источников** | `{failed_sources}` |")
-    lines.append("")
-    
-    # ===== VPN APPS SECTION =====
-    lines.append("---")
-    lines.append("")
-    lines.append("## 📱 VPN Приложения")
-    lines.append("")
-    lines.append("> Выберите приложение для вашей платформы и импортируйте конфигурации из таблиц ниже")
-    lines.append("")
-    
-    # Таблица приложений
-    lines.append("| Приложение | Платформы | Описание | Скачать |")
-    lines.append("|------------|-----------|----------|---------|")
-    
-    for cat in ["nekobox", "v2ray", "happ", "singbox", "clash"]:
-        if cat in APPS_INFO:
-            app = APPS_INFO[cat]
-            platforms = generate_platform_badges(app["platforms"])
-            lines.append(f"| {app['icon']} **{app['name']}** | {platforms} | {app['description']} | [⬇️ Скачать]({app['download_url']}) |")
-    
-    lines.append("")
-    
-    # ===== QUICK START =====
-    lines.append("---")
-    lines.append("")
-    lines.append("## 🚀 Быстрый старт")
-    lines.append("")
-    lines.append("1. **Выберите приложение** из таблицы выше и установите его")
-    lines.append("2. **Найдите нужный конфиг** в разделах ниже")
-    lines.append("3. **Нажмите на ссылку \"📋 Копировать\"** или \"⬇️ Скачать\"**")
-    lines.append("4. **Импортируйте** ссылку или файл в ваше VPN приложение")
-    lines.append("")
-    lines.append("> 💡 **Совет:** Конфигурации обновляются автоматически каждые 3 часа!")
-    lines.append("")
-    
-    # ===== CONFIGS BY CATEGORY =====
-    lines.append("---")
-    lines.append("")
-    lines.append("## 📂 Конфигурации по категориям")
-    lines.append("")
-    
-    # Порядок категорий
-    category_order = ["nekobox", "v2ray", "happ", "singbox", "clash", "tor"]
-    
-    for cat in category_order:
-        configs = grouped.get(cat, [])
-        if not configs:
+    # === ТАБЛИЦЫ ПО КАТЕГОРИЯМ ===
+    for category_key, cat_info in CATEGORIES.items():
+        if category_key not in files_by_category or not files_by_category[category_key]:
             continue
+            
+        files = files_by_category[category_key]
+        cat_total_configs = sum(f.get('total_configs', 0) for f in files)
         
-        app_info = APPS_INFO.get(cat, {
-            "name": cat.upper(),
-            "icon": "📄",
-            "badge": "",
-            "description": ""
-        })
+        # Добавляем ссылку на фото в заголовок категории если есть
+        photo = cat_info.get('photo')
+        if photo:
+            photo_url = generate_photo_url(photo)
+            photo_link = f" [👁️]({photo_url})"
+        else:
+            photo_link = ""
         
-        cat_total = sum(c["counts"]["total"] for c in configs)
-        cat_files = len(configs)
+        lines.extend([
+            f"### {cat_info['icon']} {cat_info['name']}{photo_link}",
+            "",
+            f"> {cat_info['description']}",
+            "",
+            f"**Файлов:** `{len(files)}` | **Конфигураций:** `{format_number(cat_total_configs)}`",
+            "",
+            "| № | Название | Конфиги | Размер | Обновлено | Ссылка |",
+            "|---|----------|---------|--------|-----------|--------|"
+        ])
         
-        # Заголовок категории
-        lines.append(f"### {app_info['icon']} {app_info['name']}")
-        lines.append("")
-        lines.append(f"> {app_info['description']}")
-        lines.append("")
-        lines.append(f"**Файлов:** `{cat_files}` | **Конфигураций:** `{format_number(cat_total)}`")
-        lines.append("")
-        
-        # Таблица файлов
-        lines.append("| № | Название | Конфиги | Размер | Обновлено | Ссылка |")
-        lines.append("|---|----------|---------|--------|-----------|--------|")
-        
-        for idx, cfg in enumerate(configs, 1):
-            raw_url = get_gitverse_raw_url(cfg["category"], cfg["filename"])
-            counts = cfg["counts"]
-            config_badges = generate_config_badges(counts)
+        for idx, file_info in enumerate(files, 1):
+            protocols = file_info.get('protocols', {})
+            protocols_badge = format_protocols_badge(protocols)
+            total = file_info.get('total_configs', 0)
+            download_url = generate_api_url(file_info['path'])
             
             lines.append(
-                f"| {idx} | **{cfg['name']}**<br>{config_badges} | "
-                f"`{format_number(counts['total'])}` | "
-                f"`{cfg['size_kb']} KB` | "
-                f"`{cfg['updated']}` | "
-                f"[⬇️ Скачать]({raw_url}) |"
+                f"| {idx} | **{file_info['name']}**<br>{protocols_badge} | "
+                f"`{format_number(total)}` | `{file_info['size_formatted']}` | "
+                f"`{file_info['modified']}` | [⬇️ Скачать]({download_url}) |"
             )
         
         lines.append("")
     
-    # ===== ALL FILES SUMMARY =====
-    lines.append("---")
-    lines.append("")
-    lines.append("## 📋 Все файлы (быстрый доступ)")
-    lines.append("")
-    lines.append("<details>")
-    lines.append("<summary>🔽 Нажмите чтобы развернуть список всех файлов</summary>")
-    lines.append("")
-    lines.append("```")
+    # === БЫСТРЫЙ ДОСТУП ===
+    lines.extend([
+        "---",
+        "",
+        "## 📋 Все файлы (быстрый доступ)",
+        "",
+        "<details>",
+        "<summary>🔽 Нажмите чтобы развернуть список всех файлов</summary>",
+        "",
+        "```"
+    ])
     
-    for cat in category_order:
-        configs = grouped.get(cat, [])
-        if not configs:
+    for category_key in sorted(files_by_category.keys()):
+        files = files_by_category[category_key]
+        if not files:
             continue
+            
+        cat_info = CATEGORIES.get(category_key, {'name': category_key, 'icon': '📁'})
+        lines.append(f"")
+        lines.append(f"📁 {cat_info['name']}/")
         
-        app_info = APPS_INFO.get(cat, {"name": cat.upper()})
-        lines.append(f"\n📁 {app_info['name']}/")
+        for file_info in files:
+            download_url = generate_api_url(file_info['path'])
+            lines.append(f"  ├── {file_info['filename']}")
+            lines.append(f"  │   └── {download_url}")
+    
+    lines.extend([
+        "```",
+        "</details>",
+        ""
+    ])
+    
+    # === НЕДОСТУПНЫЕ ИСТОЧНИКИ ===
+    if failed_sources:
+        lines.extend([
+            "---",
+            "",
+            f"## ⚠️ Временно недоступные источники ({len(failed_sources)})",
+            "",
+            "| Источник | Категория | Ошибка |",
+            "|----------|-----------|--------|"
+        ])
         
-        for cfg in configs:
-            raw_url = get_gitverse_raw_url(cfg["category"], cfg["filename"])
-            lines.append(f"  ├── {cfg['filename']}")
-            lines.append(f"  │   └── {raw_url}")
-    
-    lines.append("```")
-    lines.append("</details>")
-    lines.append("")
-    
-    # ===== ERRORS SECTION =====
-    if data.get("errors"):
-        lines.append("---")
-        lines.append("")
-        lines.append(f"## ⚠️ Временно недоступные источники ({len(data['errors'])})")
-        lines.append("")
-        lines.append("| Источник | Категория | Ошибка |")
-        lines.append("|----------|-----------|--------|")
+        for source in failed_sources[:10]:
+            name = source.get('name', 'Unknown')
+            category = source.get('category', 'unknown')
+            error = str(source.get('error', 'Unknown error'))[:50]
+            lines.append(f"| {name} | `{category}` | `{error}...` |")
         
-        for err in data["errors"][:10]:  # Показываем первые 10 ошибок
-            short_err = err["error"][:50] + "..." if len(err["error"]) > 50 else err["error"]
-            lines.append(f"| {err['name']} | `{err.get('category', 'N/A')}` | `{short_err}` |")
-        
-        if len(data["errors"]) > 10:
-            lines.append(f"| ... | ... | *и еще {len(data['errors']) - 10} ошибок* |")
-        
-        lines.append("")
-        lines.append("> ⏰ Недоступные источники будут проверены при следующем обновлении (через 3 часа)")
-        lines.append("")
+        lines.extend([
+            "",
+            "> ⏰ Недоступные источники будут проверены при следующем обновлении (через 3 часа)",
+            ""
+        ])
     
-    # ===== FOOTER =====
-    lines.append("---")
-    lines.append("")
-    lines.append("## 🔄 Автоматическое обновление")
-    lines.append("")
-    lines.append("Этот репозиторий автоматически обновляется каждые **3 часа** через GitVerse CI/CD.")
-    lines.append("")
-    lines.append("### 📅 Расписание обновлений:")
-    lines.append("- `00:00 MSK` - Ночное обновление")
-    lines.append("- `03:00 MSK` - Раннее утро")
-    lines.append("- `06:00 MSK` - Утро")
-    lines.append("- `09:00 MSK` - Позднее утро")
-    lines.append("- `12:00 MSK` - День")
-    lines.append("- `15:00 MSK` - После обеда")
-    lines.append("- `18:00 MSK` - Вечер")
-    lines.append("- `21:00 MSK` - Поздний вечер")
-    lines.append("")
-    lines.append("---")
-    lines.append("")
-    lines.append("## 📝 Как добавить источник")
-    lines.append("")
-    lines.append("1. Отредактируйте файл `sources/urls.txt`")
-    lines.append("2. Добавьте строку в формате: `URL|CATEGORY|NAME`")
-    lines.append("3. Доступные категории: `nekobox`, `v2ray`, `happ`, `singbox`, `clash`, `tor`")
-    lines.append("4. Создайте Pull Request или запушьте изменения")
-    lines.append("")
-    lines.append("**Пример:**")
-    lines.append("```")
-    lines.append("https://example.com/config.txt|v2ray|My Config")
-    lines.append("```")
-    lines.append("")
+    # === ФУТЕР ===
+    lines.extend([
+        "---",
+        "",
+        "## 🔄 Автоматическое обновление",
+        "",
+        "Этот репозиторий автоматически обновляется каждые **3 часа** через GitVerse CI/CD.",
+        "",
+        "### 📅 Расписание обновлений:",
+        "- `00:00 MSK` - Ночное обновление",
+        "- `03:00 MSK` - Раннее утро",
+        "- `06:00 MSK` - Утро",
+        "- `09:00 MSK` - Позднее утро",
+        "- `12:00 MSK` - День",
+        "- `15:00 MSK` - После обеда",
+        "- `18:00 MSK` - Вечер",
+        "- `21:00 MSK` - Поздний вечер",
+        "",
+        "---",
+        "",
+        "## 📝 Как добавить источник",
+        "",
+        "1. Отредактируйте файл `sources/urls.txt`",
+        "2. Добавьте строку в формате: `URL|CATEGORY|NAME`",
+        "3. Доступные категории: `nekobox`, `v2ray`, `happ`, `singbox`, `clash`, `tor`",
+        "4. Создайте Pull Request или запушьте изменения",
+        "",
+        "**Пример:**",
+        "```",
+        "https://example.com/config.txt|v2ray|My Config",
+        "```",
+        "",
+        "---",
+        "",
+        "<div align=\"center\">",
+        "",
+        "**🤖 Автоматизировано с любовью для свободного интернета**",
+        "",
+        f"*Последнее обновление: {datetime.now().strftime('%Y-%m-%d %H:%M:%S MSK')}*",
+        "",
+        "</div>"
+    ])
     
-    # ===== STATS & INFO =====
-    lines.append("---")
-    lines.append("")
-    lines.append("<div align=\"center\">")
-    lines.append("")
-    lines.append("**🤖 Автоматизировано с любовью для свободного интернета**")
-    lines.append("")
-    lines.append(f"*Последнее обновление: {datetime.now().strftime('%Y-%m-%d %H:%M:%S MSK')}*")
-    lines.append("")
-    lines.append("</div>")
-    lines.append("")
-    
-    # Записываем README
-    with open(README_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-    
-    print(f"✅ README.md generated successfully!")
-    print(f"   - Total configs: {total_configs}")
-    print(f"   - Total files: {total_files}")
-    print(f"   - Categories: {len([c for c in category_order if c in grouped])}")
-    
-    return True
+    return '\n'.join(lines)
 
+def main():
+    """Основная функция"""
+    print("📝 Генерация README.md...")
+    
+    metadata = load_metadata()
+    print(f"📊 Загружено метаданных: {metadata.get('total_sources', 0)} источников")
+    
+    files_by_category = scan_vpn_files()
+    total_files = sum(len(files) for files in files_by_category.values())
+    print(f"📁 Найдено файлов: {total_files}")
+    
+    files_by_category = merge_with_metadata(files_by_category, metadata)
+    
+    readme_content = generate_readme(files_by_category, metadata)
+    
+    with open("README.md", "w", encoding="utf-8") as f:
+        f.write(readme_content)
+    
+    print("✅ README.md успешно сгенерирован!")
+    print(f"🔗 API-ссылки: https://gitverse.ru/api/repos/...")
+    print(f"📸 Фото-превью: https://gitverse.ru/api/repos/.../foto/...")
 
 if __name__ == "__main__":
-    generate_readme()
+    main()
