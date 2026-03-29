@@ -1,66 +1,82 @@
-name: "Auto-update VPN"
+name: "Auto-update VPN Configs"
 
 on:
   schedule:
+    # Запуск каждые 3 часа (в 00:00, 03:00, 06:00...)
     - cron: "0 */3 * * *"
-  workflow_dispatch:
+  workflow_dispatch: # Возможность ручного запуска
 
 permissions:
   contents: write
 
 jobs:
-  update-configs:
+  update-vpn-lists:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    
     steps:
-      - name: "Checkout repository"
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITVERSE_TOKEN }}
           fetch-depth: 0
 
-      - name: "Setup Python"
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
-      - name: "Install dependencies"
+      - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            echo "requests" > requirements.txt
-            pip install requests
+          echo "Installing requests..."
+          pip install requests
+
+      - name: Create sources directory if missing
+        run: |
+          mkdir -p sources
+          if [ ! -f sources/urls.txt ]; then
+            echo "# Пример формата: URL|CATEGORY|NAME" > sources/urls.txt
+            echo "https://example.com/sub|nekobox|ExampleSource" >> sources/urls.txt
+            echo "Created dummy urls.txt"
           fi
 
-      - name: "Fetch and parse configs"
+      - name: Fetch and parse configs
         run: python scripts/fetch_configs.py
         env:
           PYTHONUTF8: "1"
           TZ: "Europe/Moscow"
 
-      - name: "Generate README"
+      - name: Generate README
         run: python scripts/generate_readme.py
         env:
           TZ: "Europe/Moscow"
 
-      - name: "Commit and push"
+      - name: Commit and Push changes
         run: |
           git config --global user.name "gitverse-bot"
           git config --global user.email "bot@gitverse.ru"
+          
+          # Проверяем, есть ли изменения
           if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes, skipping commit"
+            echo "No changes detected. Skipping commit."
           else
-            git add configs/ README.md sources/
-            git commit -m "Auto-update: $(date +'%Y-%m-%d %H:%M MSK')"
+            echo "Changes detected. Committing..."
+            git add VPNMIRRORS/ README.md
+            # Если изменился urls.txt, тоже добавляем (на случай ручного редактирования)
+            git add sources/urls.txt 2>/dev/null || true
+            
+            git commit -m "🤖 Auto-update: $(date +'%Y-%m-%d %H:%M MSK')"
             git push origin HEAD
-            echo "Changes pushed successfully"
+            echo "✅ Changes pushed successfully!"
           fi
 
-      - name: "Execution report"
+      - name: Summary Report
         if: always()
         run: |
-          echo "## Execution Report" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Time: $(date +'%Y-%m-%d %H:%M:%S MSK')" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Отчет выполнения" >> $GITHUB_STEP_SUMMARY
+          echo "- **Статус:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Время:** $(date +'%Y-%m-%d %H:%M:%S MSK')" >> $GITHUB_STEP_SUMMARY
+          if [ -f VPNMIRRORS/metadata.json ]; then
+            echo "- **Успешно:** $(cat VPNMIRRORS/metadata.json | grep '"success"' | grep -o '[0-9]*')" >> $GITHUB_STEP_SUMMARY
+            echo "- **Ошибки:** $(cat VPNMIRRORS/metadata.json | grep '"failed"' | grep -o '[0-9]*')" >> $GITHUB_STEP_SUMMARY
+          fi
