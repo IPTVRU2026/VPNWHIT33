@@ -27,7 +27,12 @@ jobs:
 
       - name: "Install dependencies"
         run: |
-          pip install -r requirements.txt || echo "requests" > requirements.txt && pip install requests
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "requests" > requirements.txt
+            pip install requests
+          fi
 
       - name: "Fetch and parse configs"
         run: python scripts/fetch_configs.py
@@ -44,7 +49,7 @@ jobs:
         run: |
           git config --global user.name "gitverse-bot"
           git config --global user.email "bot@gitverse.ru"
-          if git diff --quiet; then
+          if git diff --quiet && git diff --staged --quiet; then
             echo "No changes, skipping commit"
           else
             git add configs/ README.md sources/
