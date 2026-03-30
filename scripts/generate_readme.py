@@ -51,8 +51,37 @@ CATEGORIES = {
     'tor': {
         'icon': '🧅',
         'name': 'TOR Bridges',
-        'photo': None,  # У TOR нет фото
+        'photo': None,
         'description': 'Мосты для обхода блокировок TOR'
+    }
+}
+
+# Прямые ссылки на скачивание с Mail.ru Cloud
+DOWNLOAD_LINKS = {
+    'nekobox': {
+        'windows': 'https://cloud.mail.ru/public/4S6V/b7MpS2Mq2',
+        'android': None,  # Нет отдельной ссылки на nekoray.apk
+        'mac': None
+    },
+    'v2ray': {
+        'windows': 'https://cloud.mail.ru/public/sgNP/F46KfPDQb',
+        'android': 'https://cloud.mail.ru/public/Qt13/dcrEunZXz',
+        'mac': 'https://cloud.mail.ru/public/FHHR/3cEDNRdBQ'
+    },
+    'happ': {
+        'windows': None,
+        'android': 'https://cloud.mail.ru/public/oNx1/p9ABSSc35',
+        'mac': None
+    },
+    'singbox': {
+        'windows': 'https://cloud.mail.ru/public/mN76/xdt4SSKd3',
+        'android': 'https://cloud.mail.ru/public/8iNb/TVsDyCQHt',
+        'mac': None
+    },
+    'clash': {
+        'windows': 'https://cloud.mail.ru/public/LyPS/KhTPz3N9S',
+        'android': 'https://cloud.mail.ru/public/VRSa/PQwpQ5QY4',
+        'mac': 'https://cloud.mail.ru/public/rLZc/X6jDeNXiw'
     }
 }
 
@@ -174,6 +203,31 @@ def count_total_configs(files_by_category: dict) -> int:
         for f in files
     )
 
+def generate_download_links_section(category: str) -> str:
+    """Генерирует секцию с кнопками скачивания для платформ"""
+    links = DOWNLOAD_LINKS.get(category, {})
+    if not any(links.values()):
+        return ""
+    
+    buttons = []
+    
+    # Windows
+    if links.get('windows'):
+        buttons.append(f"[💻 Windows]({links['windows']})")
+    
+    # Android
+    if links.get('android'):
+        buttons.append(f"[📱 Android]({links['android']})")
+    
+    # macOS
+    if links.get('mac'):
+        buttons.append(f"[🍎 macOS]({links['mac']})")
+    
+    if not buttons:
+        return ""
+    
+    return "<br>" + " • ".join(buttons)
+
 def generate_vpn_preview_section() -> list:
     """Генерирует секцию с иконками-превью VPN приложений"""
     lines = [
@@ -182,8 +236,8 @@ def generate_vpn_preview_section() -> list:
         "> Выберите приложение для вашей платформы и импортируйте конфигурации из таблиц ниже",
         "> **Нажмите на иконку 👁️ чтобы увидеть скриншот приложения**",
         "",
-        "| Приложение | Платформы | Описание | Скачать | Превью |",
-        "|------------|-----------|----------|---------|--------|"
+        "| Приложение | Платформы | Описание | Сайт | Скачать |",
+        "|------------|-----------|----------|------|---------|"
     ]
     
     vpn_apps = [
@@ -223,15 +277,18 @@ def generate_vpn_preview_section() -> list:
         # Генерируем ссылку на фото если есть
         if photo:
             photo_url = generate_photo_url(photo)
-            # 👁️ иконка с ссылкой на фото
-            preview_badge = f"[👁️ Открыть фото]({photo_url})"
+            preview_badge = f"[👁️]({photo_url})"
         else:
             preview_badge = "—"
         
+        # Генерируем кнопки скачивания
+        download_links = generate_download_links_section(app['key'])
+        
         lines.append(
-            f"| {cat_info.get('icon', '📱')} **{name}** | "
+            f"| {cat_info.get('icon', '📱')} **{name}** {preview_badge} | "
             f"{app['platforms']} | {description} | "
-            f"[⬇️ Скачать]({app['download']}) | {preview_badge} |"
+            f"[🌐 Сайт]({app['download']}) | "
+            f"{download_links if download_links else '—'} |"
         )
     
     return lines
@@ -282,9 +339,10 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
         "",
         "1. **Выберите приложение** из таблицы выше и установите его",
         "2. **Нажмите на 👁️ иконку** чтобы посмотреть скриншот приложения",
-        "3. **Найдите нужный конфиг** в разделах ниже",
-        "4. **Нажмите на ссылку \"⬇️ Скачать\"**",
-        "5. **Импортируйте** ссылку или файл в ваше VPN приложение",
+        "3. **Нажмите на кнопку скачивания** (Windows/Android/macOS) чтобы загрузить файл",
+        "4. **Найдите нужный конфиг** в разделах ниже",
+        "5. **Нажмите на ссылку \"⬇️ Скачать\"**",
+        "6. **Импортируйте** ссылку или файл в ваше VPN приложение",
         "",
         "> 💡 **Совет:** Конфигурации обновляются автоматически каждые 3 часа!",
         "",
@@ -310,8 +368,15 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
         else:
             photo_link = ""
         
+        # Добавляем ссылки на скачивание в заголовок категории
+        download_links = generate_download_links_section(category_key)
+        if download_links:
+            download_header = f"<br>💾 **Скачать:**{download_links}"
+        else:
+            download_header = ""
+        
         lines.extend([
-            f"### {cat_info['icon']} {cat_info['name']}{photo_link}",
+            f"### {cat_info['icon']} {cat_info['name']}{photo_link}{download_header}",
             "",
             f"> {cat_info['description']}",
             "",
@@ -460,6 +525,7 @@ def main():
     print("✅ README.md успешно сгенерирован!")
     print(f"🔗 API-ссылки: https://gitverse.ru/api/repos/...")
     print(f"📸 Фото-превью: https://gitverse.ru/api/repos/.../foto/...")
+    print(f"💾 Добавлены прямые ссылки на скачивание с Mail.ru Cloud")
 
 if __name__ == "__main__":
     main()
