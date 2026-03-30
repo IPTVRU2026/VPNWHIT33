@@ -17,7 +17,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 # Настройки
-TIMEOUT = 45
+TIMEOUT = 15  # ← Уменьшил с 45 до 15 для быстрого перехода
+MAX_RETRIES = 2  # ← Уменьшил с 3 до 2 для скорости
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 OUTPUT_DIR = Path("VPNMIRRORS")
 SOURCES_FILE = Path("sources/urls.txt")
@@ -77,18 +78,33 @@ APPS = {
 
 
 def count_configs(content: str) -> dict:
-    """Считает количество различных типов конфигураций в файле"""
+    """
+    Считает количество различных типов конфигураций в файле
+    Более точный подсчет с лучшей поддержкой форматов
+    """
     if not content or not content.strip():
-        return {"total": 0, "vless": 0, "vmess": 0, "trojan": 0, "ss": 0, "ssr": 0, "hysteria": 0, "tuic": 0, "other": 0}
+        return {
+            "total": 0, 
+            "vless": 0, 
+            "vmess": 0, 
+            "trojan": 0, 
+            "ss": 0, 
+            "ssr": 0, 
+            "hysteria": 0, 
+            "tuic": 0,
+            "tor": 0,
+            "other": 0
+        }
     
     patterns = {
         "vless": r'^vless://',
         "vmess": r'^vmess://',
-        "trojan": r'^trojan://',
-        "ss": r'^ss://',
+        "trojan": r'^trojan://|^trojan\+ssl://|^trojan\+ws://',
+        "ss": r'^ss://|^ss\+tls://',
         "ssr": r'^ssr://',
         "hysteria": r'^hysteria://|^hy2://',
         "tuic": r'^tuic://',
+        "tor": r'^(bridge|obfs4|meek|snowflake|wss-diffie-hellman)',
     }
     
     counts = {k: 0 for k in patterns.keys()}
@@ -97,7 +113,9 @@ def count_configs(content: str) -> dict:
     lines = content.splitlines()
     for line in lines:
         line = line.strip()
-        if not line or line.startswith('#'):
+        
+        # Пропускаем пустые строки и комментарии
+        if not line or line.startswith('#') or line.startswith('//'):
             continue
         
         matched = False
@@ -108,12 +126,15 @@ def count_configs(content: str) -> dict:
                 break
         
         if not matched:
-            # Проверяем на TOR bridges, IP адреса и другие форматы
-            if any(x in line.lower() for x in ['bridge', 'obfs4', 'meek', 'snowflake']):
+            # Дополнительная проверка на base64 или другие форматы
+            if line.startswith('ss://') or line.startswith('vmess://'):
+                # Уже проверили выше
+                pass
+            elif re.match(r'^[A-Za-z0-9+/=\-_]{20,}$', line):
+                # Возможно base64 конфиг
                 counts["other"] += 1
-            elif re.match(r'^\d+\.\d+\.\d+\.\d+', line):
-                counts["other"] += 1
-            elif '://' in line:
+            elif '://' in line and any(x in line for x in ['vless', 'vmess', 'trojan', 'ss', 'ssr']):
+                # Могут быть альтернативные порты
                 counts["other"] += 1
     
     counts["total"] = sum(counts.values())
@@ -125,7 +146,6 @@ def decode_base64_content(content: str) -> str:
     if not content:
         return content
     
-    # Проверяем, похоже ли содержимое на base64
     content_stripped = content.strip()
     if not content_stripped:
         return content
@@ -136,9 +156,7 @@ def decode_base64_content(content: str) -> str:
     
     # Пробуем декодировать
     try:
-        # Убираем пробелы и переносы строк
         cleaned = re.sub(r'\s+', '', content_stripped)
-        # Проверяем валидность base64
         if re.match(r'^[A-Za-z0-9+/]*={0,2}$', cleaned):
             decoded = base64.b64decode(cleaned).decode('utf-8', errors='ignore')
             if decoded.strip() and any(proto in decoded for proto in ['vless://', 'vmess://', 'trojan://', 'ss://']):
@@ -149,8 +167,11 @@ def decode_base64_content(content: str) -> str:
     return content
 
 
-def fetch_url(url: str, retries: int = 3) -> tuple:
-    """Скачивает файл с повторами при ошибке, возвращает (content, error)"""
+def fetch_url(url: str, retries: int = MAX_RETRIES) -> tuple:
+    """
+    Скачивает файл с повторами при ошибке, возвращает (content, error)
+    ⚡ Быстро переходит к следующему источнику при ошибке
+    """
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "text/plain,text/html,application/json,*/*",
@@ -164,7 +185,7 @@ def fetch_url(url: str, retries: int = 3) -> tuple:
             resp = requests.get(
                 url, 
                 headers=headers, 
-                timeout=TIMEOUT, 
+                timeout=TIMEOUT,  # ← Быстрый таймаут
                 allow_redirects=True,
                 verify=True
             )
@@ -175,20 +196,38 @@ def fetch_url(url: str, retries: int = 3) -> tuple:
             content = decode_base64_content(content)
             
             return content, ""
+            
         except requests.exceptions.Timeout:
             if attempt < retries - 1:
-                time.sleep(2 ** attempt)  # Экспоненциальная задержка
+                time.sleep(0.5)  # ← Меньше задержка
                 continue
-            return "", f"Timeout after {retries} attempts"
+            return "", "Timeout"  # ← Короче сообщение
+            
+        except requests.exceptions.ConnectionError:
+            if attempt < retries - 1:
+                time.sleep(0.5)
+                continue
+            return "", "Connection error"
+            
+        except requests.exceptions.HTTPError as e:
+            # Для 404, 403 — не пробуем еще раз
+            if e.response.status_code in [404, 403, 410]:
+                return "", f"HTTP {e.response.status_code}"
+            if attempt < retries - 1:
+                time.sleep(0.5)
+                continue
+            return "", f"HTTP {e.response.status_code}"
+            
         except requests.exceptions.RequestException as e:
             if attempt < retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(0.5)
                 continue
-            return "", str(e)
+            return "", "Network error"
+            
         except Exception as e:
-            return "", str(e)
+            return "", "Unknown error"
     
-    return "", "Unknown error"
+    return "", "Max retries exceeded"
 
 
 def generate_filename(name: str, category: str, url: str) -> str:
@@ -199,7 +238,7 @@ def generate_filename(name: str, category: str, url: str) -> str:
     # Очищаем имя
     safe_name = re.sub(r'[^\w\-_.\s]', '_', name).strip()
     safe_name = re.sub(r'\s+', '_', safe_name)
-    safe_name = safe_name[:40]  # Ограничиваем длину
+    safe_name = safe_name[:40]
     
     app_info = APPS.get(category, APPS["v2ray"])
     return f"{safe_name}_{url_hash}{app_info['ext']}"
@@ -353,8 +392,8 @@ def main():
         print(f"  ✅ Success: {counts['total']} configs (VLESS:{counts['vless']} VMess:{counts['vmess']} Trojan:{counts['trojan']})")
         print(f"     Saved: {meta['filename']} ({meta['size_kb']} KB)")
         
-        # Небольшая задержка между запросами
-        time.sleep(0.5)
+        # Минимальная задержка между запросами
+        time.sleep(0.2)
     
     # Статистика
     total_configs = sum(r['counts']['total'] for r in results)
