@@ -153,15 +153,17 @@ def scan_vpn_files() -> dict:
 
 def merge_with_metadata(files_by_category: dict, metadata: dict) -> dict:
     """Объединяет с метаданными"""
-    for category, files in files_by_category.items():
-        for file_info in files:
-            meta_files = metadata.get('files', {}).get(category, [])
-            for meta_file in meta_files:
-                if meta_file.get('filename') == file_info['filename']:
-                    file_info['protocols'] = meta_file.get('protocols', {})
-                    file_info['total_configs'] = meta_file.get('total_configs', 0)
-                    file_info['name'] = meta_file.get('name', file_info['name'])
+    for config in metadata.get('configs', []):
+        category = config.get('category')
+        filename = config.get('filename')
+        
+        if category in files_by_category:
+            for file_info in files_by_category[category]:
+                if file_info['filename'] == filename:
+                    file_info['protocols'] = config.get('counts', {})
+                    file_info['total_configs'] = config.get('counts', {}).get('total', 0)
                     break
+    
     return files_by_category
 
 def count_total_configs(files_by_category: dict) -> int:
@@ -240,8 +242,8 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
     total_files = sum(len(files) for files in files_by_category.values())
     total_configs = count_total_configs(files_by_category)
     total_sources = metadata.get('total_sources', 0)
-    working_sources = metadata.get('working_sources', 0)
-    failed_sources = metadata.get('failed_sources', [])
+    working_sources = metadata.get('success', 0)
+    failed_sources = metadata.get('errors', [])
     update_time = datetime.now().strftime('%Y-%m-%d %H:%M MSK')
     
     lines = [
@@ -365,31 +367,35 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
         ""
     ])
     
-    # === НЕДОСТУПНЫЕ ИСТОЧНИКИ ===
-    if failed_sources:
-        lines.extend([
-            "---",
-            "",
-            f"## ⚠️ Временно недоступные источники ({len(failed_sources)})",
-            "",
-            "| Источник | Категория | Ошибка |",
-            "|----------|-----------|--------|"
-        ])
-        
-        for source in failed_sources[:10]:
-            name = source.get('name', 'Unknown')
-            category = source.get('category', 'unknown')
-            error = str(source.get('error', 'Unknown error'))[:50]
-            lines.append(f"| {name} | `{category}` | `{error}...` |")
-        
-        lines.extend([
-            "",
-            "> ⏰ Недоступные источники будут проверены при следующем обновлении (через 3 часа)",
-            ""
-        ])
-    
-    # === ФУТЕР ===
+    # === ИНФОРМАЦИЯ О БЛОКИРОВКАХ ===
     lines.extend([
+        "---",
+        "",
+        "## 🚫 Как обходить CIDR и SNI блокировки",
+        "",
+        "### 📍 CIDR-блокировка (по IP-адресам)",
+        "",
+        "**Как блокируют:**  ",
+        "Роскомнадзор добавляет целые диапазоны IP-адресов в реестр блокировок. Трафик на эти IP обрывается провайдером.",
+        "",
+        "**Как обходим:**  ",
+        "В конфигах используются **white CIDR**-списки — разрешённые («чистые») диапазоны IP. VPN направляет трафик только через эти белые подсети, обходя заблокированные адреса.",
+        "",
+        "---",
+        "",
+        "### 🔠 SNI-блокировка (по имени сервера)",
+        "",
+        "**Как блокируют:**  ",
+        "Провайдер видит **SNI** (Server Name Indication) — имя сайта в открытом виде при подключении (например, `youtube.com`). Если имя в чёрном списке — соединение разрывается.",
+        "",
+        "**Как обходим:**  ",
+        "Используются **white SNI**-списки и технологии **Reality / uTLS**. Они маскируют настоящее имя сайта или подменяют его на «чистое», чтобы провайдер не мог определить цель.",
+        "",
+        "> 💡 **Простыми словами:**  ",
+        "> - **CIDR** — блокировка по «адресу дома»  ",
+        "> - **SNI** — блокировка по «названию на табличке»  ",
+        "> - **White-списки** позволяют обходить обе блокировки, направляя трафик через разрешённые IP и домены.",
+        "",
         "---",
         "",
         "## 🔄 Автоматическое обновление",
