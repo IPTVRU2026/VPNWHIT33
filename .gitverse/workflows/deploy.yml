@@ -1,4 +1,4 @@
-name: 🚀 Deploy Site & Update README
+name🔗 Update Site Link in README
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-and-update:
+  update-links:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,60 +21,33 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITVERSE_TOKEN }}@gitverse.ru/${{ github.repository }}.git
 
-      - name: 🌐 Deploy to GitVerse Pages (gh-pages)
-        run: |
-          # Копируем файлы сайта во временную папку
-          mkdir -p /tmp/site
-          cp -r . /tmp/site/
-          rm -rf /tmp/site/.git
-
-          # Клонируем репо заново только для gh-pages в отдельную папку
-          git clone --depth=1 --branch gh-pages \
-            https://x-access-token:${{ secrets.GITVERSE_TOKEN }}@gitverse.ru/${{ github.repository }}.git \
-            /tmp/gh-pages 2>/dev/null \
-          || git clone --depth=1 \
-            https://x-access-token:${{ secrets.GITVERSE_TOKEN }}@gitverse.ru/${{ github.repository }}.git \
-            /tmp/gh-pages
-
-          cd /tmp/gh-pages
-
-          # Если ветка gh-pages не существовала — создаём orphan
-          git checkout gh-pages 2>/dev/null || {
-            git checkout --orphan gh-pages
-            git rm -rf . --quiet 2>/dev/null || true
-          }
-
-          # Обновляем содержимое
-          rm -rf ./* 2>/dev/null || true
-          cp -r /tmp/site/. .
-
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add -A
-          git diff --cached --quiet || git commit -m "deploy: обновление сайта [skip ci]"
-          git push origin gh-pages --force
-
-      - name: 📝 Обновить README с ссылкой на сайт
+      - name: 📝 Вставить ссылку на index.html в README
         run: |
           OWNER="${{ github.repository_owner }}"
           REPO="${{ github.event.repository.name }}"
-          SITE_URL="https://${OWNER}.gitverse.ru/${REPO}/"
+          BRANCH="${{ github.ref_name }}"
+          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/raw/branch/${BRANCH}/index.html"
+          BADGE="[![🌐 Открыть сайт](https://img.shields.io/badge/🌐_Открыть_сайт-GitVerse-blue)](${SITE_URL})"
 
-          if grep -q "<!-- SITE_BADGE -->" README.md 2>/dev/null; then
-            sed -i "s|<!-- SITE_BADGE -->.*<!-- /SITE_BADGE -->|<!-- SITE_BADGE --> [![🌐 Открыть сайт](https://img.shields.io/badge/Site-GitVerse-blue)](${SITE_URL}) <!-- /SITE_BADGE -->|g" README.md
+          if [ ! -f README.md ]; then
+            echo "# ${REPO}" > README.md
+          fi
+
+          if grep -q "<!-- SITE_BADGE -->" README.md; then
+            sed -i "s|<!-- SITE_BADGE -->.*<!-- /SITE_BADGE -->|<!-- SITE_BADGE --> ${BADGE} <!-- /SITE_BADGE -->|g" README.md
           else
-            { echo "<!-- SITE_BADGE --> [![🌐 Открыть сайт](https://img.shields.io/badge/Site-GitVerse-blue)](${SITE_URL}) <!-- /SITE_BADGE -->"; echo ""; cat README.md; } > README.tmp
+            { echo "<!-- SITE_BADGE --> ${BADGE} <!-- /SITE_BADGE -->"; echo ""; cat README.md; } > README.tmp
             mv README.tmp README.md
           fi
 
-          echo "Site URL: ${SITE_URL}"
+          echo "✅ README обновлён. URL: ${SITE_URL}"
 
-      - name: 🔧 Обновить ссылку в readme_generate.py
+      - name: 🔧 Вставить ссылку в readme_generate.py
         run: |
           OWNER="${{ github.repository_owner }}"
           REPO="${{ github.event.repository.name }}"
-          SITE_URL="https://${OWNER}.gitverse.ru/${REPO}/"
+          BRANCH="${{ github.ref_name }}"
+          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/raw/branch/${BRANCH}/index.html"
 
           if [ -f readme_generate.py ]; then
             if grep -q "^SITE_URL" readme_generate.py; then
@@ -83,10 +56,12 @@ jobs:
               { echo "SITE_URL = \"${SITE_URL}\"  # auto-updated by CI"; echo ""; cat readme_generate.py; } > readme_generate.tmp
               mv readme_generate.tmp readme_generate.py
             fi
+            echo "✅ readme_generate.py обновлён"
           fi
 
-      - name: 💾 Commit изменений в main
+      - name: 💾 Commit и push
         run: |
           git add README.md readme_generate.py 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "ci: обновлена ссылка на сайт GitVerse Pages [skip ci]"
+          git diff --cached --quiet && echo "Нет изменений, пропускаем" && exit 0
+          git commit -m "ci: обновлена ссылка на index.html [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
