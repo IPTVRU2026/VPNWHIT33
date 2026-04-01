@@ -426,14 +426,17 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
             lines.append(f"  ├── {file_info['filename']}")
             lines.append(f"  │   └── {download_url}")
     
-    lines.extend([
+        lines.extend([
         "```",
         "</details>",
         ""
     ])
     
+    # Сайт для проверки впн конфигураций чекер 
+    # https://ruvipien.gitverse.site/russian-white-bolt/
+    
     # === ИНФОРМАЦИЯ О БЛОКИРОВКАХ ===
-    lines.extend([
+ lines.extend([
         "---",
         "",
         "## 🚫 Как обходить CIDR и SNI блокировки",
