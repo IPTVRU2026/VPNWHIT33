@@ -43,7 +43,7 @@
             color: #c9d1d9;
             font-weight: 500;
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 12px;
             background: #0d1117;
@@ -52,9 +52,14 @@
             border-radius: 6px;
             font-size: 14px;
         }
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #58a6ff;
+        }
+        textarea {
+            min-height: 150px;
+            font-family: monospace;
+            resize: vertical;
         }
         .btn {
             padding: 12px 20px;
@@ -223,6 +228,49 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .mode-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 10px;
+        }
+        .mode-tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .mode-tab.active {
+            background: #238636;
+            color: white;
+            border-color: #238636;
+        }
+        .mode-content {
+            display: none;
+        }
+        .mode-content.active {
+            display: block;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+        }
+        .alert-info {
+            background: rgba(88,166,255,0.1);
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+        .alert-warning {
+            background: rgba(218,170,15,0.1);
+            border-color: #daaa0f;
+            color: #daaa0f;
+        }
         @media (max-width: 768px) {
             .container { padding: 0 10px; }
             .title { font-size: 1.8rem; }
@@ -233,11 +281,6 @@
 
 <body>
 
-<script>
-    // Токен из GitVerse
-    window.GITVERSE_TOKEN = "7d2f21f308dc826e0b9d0516531981a6361099b2";
-</script>
-
 <div class="container">
 
 <header>
@@ -246,27 +289,83 @@
 </header>
 
 <div class="panel">
-    <div class="form-group">
-        <label><i class="fas fa-code-branch"></i> Репозиторий (владелец)</label>
-        <input id="repoOwner" value="RUVIPIEN" readonly>
+    <div class="mode-tabs">
+        <button class="mode-tab active" onclick="switchMode('gitverse')">
+            <i class="fas fa-cloud"></i> GitVerse API
+        </button>
+        <button class="mode-tab" onclick="switchMode('manual')">
+            <i class="fas fa-paste"></i> Ручной ввод
+        </button>
+        <button class="mode-tab" onclick="switchMode('github')">
+            <i class="fab fa-github"></i> GitHub
+        </button>
+    </div>
+
+    <!-- GitVerse Mode -->
+    <div id="gitverseMode" class="mode-content active">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> 
+            <strong>Важно:</strong> GitVerse блокирует CORS-запросы из браузера. 
+            Используйте расширение браузера для обхода CORS или переключитесь в режим "Ручной ввод".
+        </div>
+        
+        <div class="form-group">
+            <label><i class="fas fa-code-branch"></i> Репозиторий (владелец)</label>
+            <input id="repoOwner" value="RUVIPIEN" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label><i class="fas fa-book"></i> Название репозитория</label>
+            <input id="repoName" value="russian-white-bolt" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label><i class="fas fa-folder"></i> Папка с конфигами</label>
+            <input id="folderPath" value="VPNMIRRORS">
+        </div>
+        
+        <div class="form-group">
+            <label><i class="fas fa-key"></i> GitVerse Токен (опционально)</label>
+            <input id="gitverseToken" type="password" placeholder="Введите токен или оставьте пустым">
+        </div>
+    </div>
+
+    <!-- Manual Mode -->
+    <div id="manualMode" class="mode-content">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Вставьте конфиги напрямую. Каждый конфиг с новой строки.
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-file-alt"></i> Конфигурации (vless://, vmess://, ss://)</label>
+            <textarea id="manualConfigs" placeholder="vless://...
+vmess://...
+ss://..."></textarea>
+        </div>
+    </div>
+
+    <!-- GitHub Mode -->
+    <div id="githubMode" class="mode-content">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            GitHub обычно более доступен, чем GitVerse. Укажите raw URL.
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-link"></i> Raw URL файла с конфигами</label>
+            <input id="githubUrl" placeholder="https://raw.githubusercontent.com/...">
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-key"></i> GitHub Token (для приватных репо)</label>
+            <input id="githubToken" type="password" placeholder="ghp_...">
+        </div>
     </div>
     
-    <div class="form-group">
-        <label><i class="fas fa-book"></i> Название репозитория</label>
-        <input id="repoName" value="russian-white-bolt" readonly>
-    </div>
-    
-    <div class="form-group">
-        <label><i class="fas fa-folder"></i> Папка с конфигами</label>
-        <input id="folderPath" value="VPNMIRRORS">
-    </div>
+    <hr>
     
     <div class="form-group">
         <label><i class="fas fa-clock"></i> Таймаут проверки (мс)</label>
         <input id="timeout" value="5000" type="number">
     </div>
-    
-    <hr>
     
     <div class="filter-group">
         <label>
@@ -319,9 +418,7 @@
 </div>
 
 <script>
-const GV_TOKEN = window.GITVERSE_TOKEN;
-const GV_BASE = "https://gitverse.ru/api/v1";
-
+let currentMode = 'gitverse';
 let allConfigs = [];
 let workingConfigs = [];
 let isScanning = false;
@@ -330,6 +427,17 @@ const logPanel = document.getElementById('logPanel');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const startBtn = document.getElementById('startBtn');
+
+function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById(mode + 'Mode').classList.add('active');
+    
+    addLog(`🔄 Режим переключен: ${mode}`, 'info');
+}
 
 function addLog(message, type = 'info') {
     const div = document.createElement('div');
@@ -343,46 +451,6 @@ function addLog(message, type = 'info') {
 function updateProgress(percent, text) {
     progressFill.style.width = `${percent}%`;
     progressText.textContent = text;
-}
-
-async function gvFetch(url) {
-    const response = await fetch(url, {
-        headers: { Authorization: `token ${GV_TOKEN}` }
-    });
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-    return response;
-}
-
-async function getFiles(owner, repo, folder, path = '') {
-    const fullPath = path ? `${folder}/${path}` : folder;
-    const url = `${GV_BASE}/repos/${owner}/${repo}/contents/${fullPath}`;
-    
-    try {
-        const res = await gvFetch(url);
-        const items = await res.json();
-        
-        let files = [];
-        
-        for (const item of items) {
-            if (item.type === 'file' && (item.name.endsWith('.txt') || item.name.endsWith('.cfg') || item.name === 'wcfg')) {
-                files.push({
-                    name: item.name,
-                    path: item.path,
-                    url: item.download_url || `${GV_BASE}/repos/${owner}/${repo}/raw/${item.path}`
-                });
-            } else if (item.type === 'dir') {
-                const subFiles = await getFiles(owner, repo, folder, item.path);
-                files = files.concat(subFiles);
-            }
-        }
-        
-        return files;
-    } catch (error) {
-        addLog(`Ошибка получения списка файлов: ${error.message}`, 'error');
-        return [];
-    }
 }
 
 // Извлечение домена и порта из конфига
@@ -523,6 +591,138 @@ async function checkConfigsSequential(configs, timeout, onProgress) {
     return results;
 }
 
+// Загрузка с GitVerse (через прокси или напрямую с CORS)
+async function loadFromGitVerse() {
+    const owner = document.getElementById('repoOwner').value;
+    const repo = document.getElementById('repoName').value;
+    const folder = document.getElementById('folderPath').value;
+    const token = document.getElementById('gitverseToken').value;
+    
+    addLog(`🔍 Подключение к GitVerse: ${owner}/${repo}/${folder}`, 'info');
+    
+    // Пробуем через CORS-прокси
+    const proxies = [
+        'https://api.allorigins.win/raw?url=',
+        'https://corsproxy.io/?',
+        'https://api.codetabs.com/v1/proxy?quest='
+    ];
+    
+    const GV_BASE = "https://gitverse.ru/api/v1";
+    const url = `${GV_BASE}/repos/${owner}/${repo}/contents/${folder}`;
+    
+    let lastError = null;
+    
+    // Сначала пробуем напрямую (если есть расширение для CORS)
+    try {
+        const headers = {};
+        if (token) headers['Authorization'] = `token ${token}`;
+        
+        const response = await fetch(url, { headers });
+        if (response.ok) {
+            const data = await response.json();
+            return await processGitVerseFiles(data, owner, repo, token);
+        }
+    } catch (error) {
+        lastError = error;
+        addLog(`⚠️ Прямое подключение не удалось: ${error.message}`, 'warning');
+    }
+    
+    // Пробуем через прокси
+    for (const proxy of proxies) {
+        try {
+            addLog(`🔄 Пробуем прокси: ${proxy.slice(0, 30)}...`, 'info');
+            const response = await fetch(proxy + encodeURIComponent(url));
+            if (response.ok) {
+                const data = await response.json();
+                addLog(`✅ Успешно через прокси`, 'success');
+                return await processGitVerseFiles(data, owner, repo, token, proxy);
+            }
+        } catch (error) {
+            continue;
+        }
+    }
+    
+    throw new Error('Не удалось подключиться к GitVerse. Попробуйте режим "Ручной ввод".');
+}
+
+async function processGitVerseFiles(items, owner, repo, token, proxy = '') {
+    let files = [];
+    
+    for (const item of items) {
+        if (item.type === 'file' && (item.name.endsWith('.txt') || item.name.endsWith('.cfg') || item.name === 'wcfg')) {
+            files.push({
+                name: item.name,
+                path: item.path,
+                url: proxy ? proxy + encodeURIComponent(item.download_url) : (item.download_url || `https://gitverse.ru/api/v1/repos/${owner}/${repo}/raw/${item.path}`)
+            });
+        } else if (item.type === 'dir') {
+            // Рекурсивно обрабатываем подпапки
+            addLog(`📁 Входим в папку: ${item.path}`, 'info');
+        }
+    }
+    
+    addLog(`📁 Найдено файлов: ${files.length}`, 'success');
+    
+    let configs = [];
+    for (const file of files) {
+        try {
+            const headers = {};
+            if (token && !proxy) headers['Authorization'] = `token ${token}`;
+            
+            const res = await fetch(file.url, { headers });
+            const text = await res.text();
+            const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+            
+            configs = configs.concat(lines);
+            addLog(`📄 ${file.name}: +${lines.length} конфигов`, 'info');
+        } catch (error) {
+            addLog(`❌ Ошибка загрузки ${file.name}: ${error.message}`, 'error');
+        }
+    }
+    
+    return configs;
+}
+
+// Загрузка с GitHub
+async function loadFromGitHub() {
+    const url = document.getElementById('githubUrl').value;
+    const token = document.getElementById('githubToken').value;
+    
+    if (!url) {
+        throw new Error('Укажите URL файла');
+    }
+    
+    addLog(`🔍 Загрузка с GitHub: ${url}`, 'info');
+    
+    try {
+        const headers = {};
+        if (token) headers['Authorization'] = `token ${token}`;
+        
+        const response = await fetch(url, { headers });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const text = await response.text();
+        const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+        
+        addLog(`📄 Загружено ${lines.length} конфигов`, 'success');
+        return lines;
+    } catch (error) {
+        throw new Error(`Ошибка GitHub: ${error.message}`);
+    }
+}
+
+// Ручной ввод
+function loadManual() {
+    const text = document.getElementById('manualConfigs').value;
+    if (!text.trim()) {
+        throw new Error('Вставьте конфигурации');
+    }
+    
+    const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+    addLog(`📝 Обработано ${lines.length} конфигов из ручного ввода`, 'success');
+    return lines;
+}
+
 async function startScan() {
     if (isScanning) return;
     isScanning = true;
@@ -532,64 +732,29 @@ async function startScan() {
     logPanel.innerHTML = '';
     updateProgress(0, 'Инициализация...');
     
-    const owner = document.getElementById('repoOwner').value;
-    const repo = document.getElementById('repoName').value;
-    const folder = document.getElementById('folderPath').value;
     const timeout = parseInt(document.getElementById('timeout').value) || 5000;
     const fastMode = document.getElementById('fastModeV2').checked;
     const checkEnabled = document.getElementById('checkConfigs').checked;
     
-    addLog(`🔍 Подключение к GitVerse: ${owner}/${repo}/${folder}`, 'info');
-    
     try {
-        // Получение списка файлов
-        updateProgress(10, 'Получение списка файлов...');
-        const files = await getFiles(owner, repo, folder);
+        // Загрузка конфигов в зависимости от режима
+        updateProgress(10, 'Загрузка конфигураций...');
         
-        addLog(`📁 Найдено файлов: ${files.length}`, 'success');
-        
-        if (files.length === 0) {
-            addLog(`⚠️ В папке "${folder}" не найдено файлов с конфигами`, 'warning');
-            updateProgress(100, 'Завершено');
-            startBtn.disabled = false;
-            startBtn.innerHTML = '<i class="fas fa-play"></i> Начать сканирование';
-            isScanning = false;
-            return;
+        if (currentMode === 'gitverse') {
+            allConfigs = await loadFromGitVerse();
+        } else if (currentMode === 'github') {
+            allConfigs = await loadFromGitHub();
+        } else if (currentMode === 'manual') {
+            allConfigs = loadManual();
         }
         
-        // Загрузка всех конфигов
-        updateProgress(20, 'Загрузка конфигураций...');
-        allConfigs = [];
-        
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            try {
-                const res = await gvFetch(file.url);
-                const text = await res.text();
-                const configs = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
-                
-                for (const cfg of configs) {
-                    if (cfg.trim() && !allConfigs.includes(cfg.trim())) {
-                        allConfigs.push(cfg.trim());
-                    }
-                }
-                
-                addLog(`📄 ${file.name}: +${configs.length} конфигов`, 'info');
-                updateProgress(20 + Math.round((i / files.length) * 30), `Загрузка: ${i+1}/${files.length}`);
-            } catch (error) {
-                addLog(`❌ Ошибка загрузки ${file.name}: ${error.message}`, 'error');
-            }
-        }
+        // Удаляем дубликаты
+        allConfigs = [...new Set(allConfigs.map(c => c.trim()))].filter(c => c);
         
         addLog(`📊 Всего уникальных конфигов: ${allConfigs.length}`, 'success');
         
         if (allConfigs.length === 0) {
-            addLog(`⚠️ Не найдено конфигураций для проверки`, 'warning');
-            updateProgress(100, 'Завершено');
-            startBtn.disabled = false;
-            startBtn.innerHTML = '<i class="fas fa-play"></i> Начать сканирование';
-            isScanning = false;
-            return;
+            throw new Error('Не найдено конфигураций для проверки');
         }
         
         // Проверка работоспособности
@@ -619,14 +784,14 @@ async function startScan() {
                 });
             }
             
-            workingConfigs = results.filter(r => r.working);
+            workingConfigs = results;
         } else {
             workingConfigs = allConfigs.map(c => ({ config: c, working: true }));
         }
         
         updateProgress(95, 'Формирование результатов...');
         
-        // Сортировка: сначала рабочие, затем остальные
+        // Сортировка: сначала рабочие
         workingConfigs.sort((a, b) => {
             if (a.working && !b.working) return -1;
             if (!a.working && b.working) return 1;
@@ -759,14 +924,10 @@ function resetForm() {
     document.getElementById('configCount').textContent = '0 конфигов';
 }
 
-// Проверка токена при загрузке
+// Инициализация
 document.addEventListener('DOMContentLoaded', () => {
-    if (!GV_TOKEN || GV_TOKEN === '__GITVERSE_TOKEN__') {
-        addLog('⚠️ Внимание: Токен GitVerse не настроен! Для работы сканера необходимо указать GITVERSE_TOKEN', 'warning');
-    } else {
-        addLog('✅ GitVerse токен найден, готов к работе', 'success');
-        addLog(`🔑 Токен: ${GV_TOKEN.substring(0, 8)}...`, 'info');
-    }
+    addLog('✅ Сканер готов к работе', 'success');
+    addLog('💡 Выберите режим работы: GitVerse (требует CORS-прокси), GitHub или Ручной ввод', 'info');
 });
 </script>
 
