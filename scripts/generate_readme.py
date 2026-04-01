@@ -436,7 +436,7 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
     # https://ruvipien.gitverse.site/russian-white-bolt/
     
     # === ИНФОРМАЦИЯ О БЛОКИРОВКАХ ===
- lines.extend([
+    lines.extend([
         "---",
         "",
         "## 🚫 Как обходить CIDR и SNI блокировки",
