@@ -1,20 +1,14 @@
-name: Deploy Site to GitHub Pages
+name: 🚀 Deploy Site + Update README + Generator
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -24,17 +18,65 @@ jobs:
       name: github-pages
 
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Pages
+      - name: 🔑 Git config
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 🌐 Сформировать ссылку сайта
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          SITE_URL="https://${OWNER}.github.io/${REPO}/"
+
+          echo "SITE_URL=$SITE_URL" >> $GITHUB_ENV
+
+      # --- README ---
+      - name: 📝 Обновить README.md
+        run: |
+          BADGE="[![🌐 Открыть сайт](https://img.shields.io/badge/🌐_Сайт-GitHub-blue)](${SITE_URL})"
+
+          if [ ! -f README.md ]; then
+            echo "# ${{ github.event.repository.name }}" > README.md
+          fi
+
+          if grep -q "<!-- SITE_BADGE -->" README.md; then
+            sed -i "s|<!-- SITE_BADGE -->.*<!-- /SITE_BADGE -->|<!-- SITE_BADGE --> ${BADGE} <!-- /SITE_BADGE -->|g" README.md
+          else
+            { echo "<!-- SITE_BADGE --> ${BADGE} <!-- /SITE_BADGE -->"; echo ""; cat README.md; } > README.tmp
+            mv README.tmp README.md
+          fi
+
+      # --- readme_generate.py ---
+      - name: 🔧 Обновить readme_generate.py
+        run: |
+          if [ -f readme_generate.py ]; then
+            if grep -q "^SITE_URL" readme_generate.py; then
+              sed -i "s|^SITE_URL.*|SITE_URL = \"${SITE_URL}\"  # auto-updated by CI|" readme_generate.py
+            else
+              { echo "SITE_URL = \"${SITE_URL}\"  # auto-updated by CI"; echo ""; cat readme_generate.py; } > tmp
+              mv tmp readme_generate.py
+            fi
+          fi
+
+      - name: 💾 Commit изменений
+        run: |
+          git add README.md readme_generate.py 2>/dev/null || true
+          git diff --cached --quiet && echo "Нет изменений" && exit 0
+          git commit -m "ci: обновлён сайт и ссылки [skip ci]"
+          git push
+
+      # --- DEPLOY ---
+      - name: ⚙️ Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: 📦 Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: 🚀 Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
