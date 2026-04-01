@@ -234,8 +234,8 @@
 <body>
 
 <script>
-    // Токен из GitVerse (заменяется при деплое)
-    window.GITVERSE_TOKEN = "__GITVERSE_TOKEN__";
+    // Токен из GitVerse
+    window.GITVERSE_TOKEN = "7d2f21f308dc826e0b9d0516531981a6361099b2";
 </script>
 
 <div class="container">
@@ -765,9 +765,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addLog('⚠️ Внимание: Токен GitVerse не настроен! Для работы сканера необходимо указать GITVERSE_TOKEN', 'warning');
     } else {
         addLog('✅ GitVerse токен найден, готов к работе', 'success');
+        addLog(`🔑 Токен: ${GV_TOKEN.substring(0, 8)}...`, 'info');
     }
 });
 </script>
 
 </body>
-    </html>
+</html>
