@@ -1,5 +1,4 @@
-
-```yaml
+```
 name: Deploy Site to GitHub Pages
 
 on:
