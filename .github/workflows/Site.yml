@@ -1,9 +1,12 @@
+
 ```yaml
-name: 🚀 Deploy Site to GitHub Pages
+name: Deploy Site to GitHub Pages
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -12,7 +15,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
@@ -21,26 +24,19 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: 📦 Upload artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: .
 
-      - name: 🌐 Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: ✅ Print URL
-        run: |
-          echo "Сайт: ${{ steps.deployment.outputs.page_url }}"
 ```
-
-Кладёшь в `.github/workflows/deploy.yml` — и готово.
