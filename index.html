@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Русский Белый Болт - Сканер лучших конфигураций</title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -23,21 +25,8 @@
             border-radius: 15px;
             border: 2px solid rgba(88,166,255,0.3);
         }
-        .title { font-size: 2.5rem; font-weight: 800; color: #58a6ff; margin-bottom: 10px; text-shadow: 0 0 20px rgba(88,166,255,0.3); }
-        .subtitle { font-size: 1.1rem; color: #8b949e; }
-        .source-badge {
-            display: inline-block;
-            margin-top: 12px;
-            padding: 5px 14px;
-            background: rgba(88,166,255,0.12);
-            border: 1px solid #58a6ff55;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: #58a6ff;
-        }
-        .source-badge i { margin-right: 6px; }
-        .bolt-icon { font-size: 3rem; margin: 20px 0; animation: spin 3s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .title { font-size: 2.5rem; font-weight: 800; color: #58a6ff; margin-bottom: 10px; }
+        .subtitle { color: #8b949e; }
         .panel {
             background-color: #161b22;
             border: 1px solid #30363d;
@@ -45,407 +34,173 @@
             padding: 25px;
             margin-bottom: 25px;
         }
-        .panel-title { color: #58a6ff; font-size: 1.3rem; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #c9d1d9; font-weight: 500; }
-        input[type="text"], input[type="number"] {
+        input {
             width: 100%;
             padding: 12px;
-            background-color: #0d1117;
+            background: #0d1117;
             border: 1px solid #30363d;
             color: #c9d1d9;
             border-radius: 6px;
-            font-size: 1rem;
-            font-family: 'Courier New', monospace;
         }
-        input[type="text"]:focus, input[type="number"]:focus {
-            outline: none;
-            border-color: #58a6ff;
-            box-shadow: 0 0 10px rgba(88,166,255,0.2);
-        }
-        input[readonly] { opacity: 0.6; cursor: default; }
-        .hint { font-size: 0.8rem; color: #8b949e; margin-top: 5px; }
-        .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 25px; }
         .btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-        .btn-primary { background-color: #238636; color: white; }
-        .btn-primary:hover:not(:disabled) { background-color: #2ea043; }
-        .btn-secondary { background-color: transparent; border: 1px solid #58a6ff; color: #58a6ff; }
-        .btn-secondary:hover:not(:disabled) { background-color: #58a6ff; color: #0d1117; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .status-panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 25px; display: none; }
-        .status-panel.active { display: block; }
-        .status-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #30363d; }
-        .status-item:last-child { border-bottom: none; }
-        .status-label { color: #8b949e; }
-        .status-value { color: #58a6ff; font-weight: 600; }
-        .progress-bar { width: 100%; height: 30px; background-color: #0d1117; border-radius: 6px; overflow: hidden; margin-top: 10px; border: 1px solid #30363d; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #238636, #3fb950); width: 0%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.85rem; transition: width 0.3s ease; }
-        .results-panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 25px; margin-bottom: 25px; display: none; }
-        .results-panel.active { display: block; }
-        .best-result { background: linear-gradient(135deg, rgba(63,185,80,0.2), rgba(88,166,255,0.2)); border: 2px solid #3fb950; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
-        .best-title { color: #3fb950; font-weight: 600; font-size: 1.1rem; margin-bottom: 15px; }
-        .best-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        .info-item { background-color: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; }
-        .info-label { color: #8b949e; font-size: 0.85rem; margin-bottom: 5px; }
-        .info-value { color: #58a6ff; font-weight: 600; word-break: break-all; font-family: 'Courier New', monospace; font-size: 0.9rem; }
-        .copy-btn { padding: 8px 16px; background-color: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background-color 0.3s ease; }
-        .copy-btn:hover { background-color: #2ea043; }
-        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #30363d; border-top: 3px solid #58a6ff; border-radius: 50%; animation: spin 1s linear infinite; }
-        .log-panel { background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.85rem; margin-top: 15px; }
-        .log-item { padding: 5px 0; border-bottom: 1px solid #30363d; color: #8b949e; }
-        .log-item.success { color: #3fb950; }
-        .log-item.error { color: #f85149; }
-        .log-item.info { color: #58a6ff; }
-        .top-item { background-color: #0d1117; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #30363d; }
-        footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #30363d; color: #8b949e; font-size: 0.9rem; }
+        .btn-primary { background: #238636; color: white; }
+        .btn-secondary { background: transparent; border: 1px solid #58a6ff; color: #58a6ff; }
+
+        .status-panel, .results-panel { display: none; }
+        .active { display: block; }
+
+        .log-panel {
+            max-height: 250px;
+            overflow-y: auto;
+            background: #0d1117;
+            padding: 10px;
+            font-family: monospace;
+        }
     </style>
 </head>
+
 <body>
+
+<script>
+    window.GITVERSE_TOKEN = "__GITVERSE_TOKEN__";
+</script>
+
 <div class="container">
-    <header>
-        <div class="bolt-icon">⚡</div>
-        <h1 class="title">Русский Белый Болт</h1>
-        <p class="subtitle">Сканер лучших конфигураций</p>
-        <div class="source-badge">
-            <i class="fas fa-database"></i> Источник: GitVerse · RUVIPIEN/russian-white-bolt
-        </div>
-    </header>
 
-    <div class="panel">
-        <div class="panel-title">
-            <i class="fas fa-cog"></i> Параметры сканирования
-        </div>
+<header>
+    <h1 class="title">⚡ Русский Белый Болт</h1>
+    <p class="subtitle">Сканер конфигов</p>
+</header>
 
-        <div class="form-group">
-            <label>Репозиторий GitVerse</label>
-            <input type="text" id="repoOwner" value="RUVIPIEN" readonly>
-            <div class="hint">Источник конфигов — RUVIPIEN/russian-white-bolt на GitVerse</div>
-        </div>
+<div class="panel">
+    <label>Репозиторий</label>
+    <input id="repoOwner" value="RUVIPIEN" readonly>
 
-        <div class="form-group">
-            <label>Название репозитория</label>
-            <input type="text" id="repoName" value="russian-white-bolt" readonly>
-        </div>
+    <label>Название</label>
+    <input id="repoName" value="russian-white-bolt" readonly>
 
-        <div class="form-group">
-            <label>Папка с конфигами</label>
-            <input type="text" id="folderPath" value="VPNMIRRORS">
-            <div class="hint">Путь к папке с конфигами (сканирует все подпапки)</div>
-        </div>
+    <label>Папка</label>
+    <input id="folderPath" value="VPNMIRRORS">
 
-        <div class="form-group">
-            <label>Таймаут проверки (мс)</label>
-            <input type="number" id="timeout" value="5000" min="1000" max="30000">
-            <div class="hint">Время ожидания ответа от конфига</div>
-        </div>
+    <label>Timeout</label>
+    <input id="timeout" value="5000">
 
-        <div class="buttons">
-            <button class="btn btn-primary" id="startBtn" onclick="startScan()">
-                <i class="fas fa-play"></i> НАЧАТЬ СКАНИРОВАНИЕ
-            </button>
-            <button class="btn btn-secondary" id="resetBtn" onclick="resetForm()">
-                <i class="fas fa-redo"></i> Очистить
-            </button>
-        </div>
-    </div>
+    <br><br>
 
-    <div class="status-panel" id="statusPanel">
-        <div class="panel-title">
-            <span class="spinner"></span> Статус сканирования
-        </div>
-        <div class="status-item">
-            <span class="status-label">Файлов найдено:</span>
-            <span class="status-value" id="filesFoundCount">0</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">Конфигов загружено:</span>
-            <span class="status-value" id="configsLoadedCount">0</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">Проверено:</span>
-            <span class="status-value" id="checkedCount">0</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">Рабочих найдено:</span>
-            <span class="status-value" id="workingCount">0</span>
-        </div>
-        <div style="margin-top: 15px;">
-            <div class="status-label">Прогресс</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill">0%</div>
-            </div>
-        </div>
-        <div class="log-panel" id="logPanel"></div>
-    </div>
+    <button class="btn btn-primary" onclick="startScan()">Старт</button>
+    <button class="btn btn-secondary" onclick="resetForm()">Сброс</button>
+</div>
 
-    <div class="results-panel" id="resultsPanel">
-        <div class="panel-title">
-            <i class="fas fa-star"></i> Результаты сканирования
-        </div>
-        <div class="best-result" id="bestResult"></div>
-        <div id="allResults"></div>
-    </div>
+<div id="statusPanel" class="panel status-panel active">
+    <div>Логи:</div>
+    <div id="logPanel" class="log-panel"></div>
+</div>
 
-    <footer>
-        <p>© 2025 Русский Белый Болт | Автоматический сканер конфигов | GitVerse → GitHub Pages</p>
-    </footer>
+<div id="resultsPanel" class="panel results-panel">
+    <h3>Результаты</h3>
+    <div id="results"></div>
+</div>
+
 </div>
 
 <script>
-    // ── Токены встроены в сайт ──────────────────────────────────────────────
-    const GV_TOKEN  = '8fb7a1e33f81699c022768391f18dc8576dae675';
-    const GV_BASE   = 'https://gitverse.ru/api/v1';
-    // ────────────────────────────────────────────────────────────────────────
+const GV_TOKEN = window.GITVERSE_TOKEN;
+const GV_BASE = "https://gitverse.ru/api/v1";
 
-    let allConfigs    = [];
-    let workingConfigs = [];
+let allConfigs = [];
+let workingConfigs = [];
 
-    const elements = {
-        repoOwner:        document.getElementById('repoOwner'),
-        repoName:         document.getElementById('repoName'),
-        folderPath:       document.getElementById('folderPath'),
-        timeout:          document.getElementById('timeout'),
-        startBtn:         document.getElementById('startBtn'),
-        statusPanel:      document.getElementById('statusPanel'),
-        resultsPanel:     document.getElementById('resultsPanel'),
-        logPanel:         document.getElementById('logPanel'),
-        filesFoundCount:  document.getElementById('filesFoundCount'),
-        configsLoadedCount: document.getElementById('configsLoadedCount'),
-        checkedCount:     document.getElementById('checkedCount'),
-        workingCount:     document.getElementById('workingCount'),
-        progressFill:     document.getElementById('progressFill'),
-        bestResult:       document.getElementById('bestResult'),
-        allResults:       document.getElementById('allResults')
-    };
+const logPanel = document.getElementById('logPanel');
 
-    function log(message, type = 'info') {
-        const item = document.createElement('div');
-        item.className = `log-item ${type}`;
-        item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        elements.logPanel.appendChild(item);
-        elements.logPanel.scrollTop = elements.logPanel.scrollHeight;
-    }
+function log(msg){
+    const div = document.createElement('div');
+    div.textContent = msg;
+    logPanel.appendChild(div);
+}
 
-    function updateProgress(current, total) {
-        const percent = Math.round((current / total) * 100);
-        elements.progressFill.style.width = percent + '%';
-        elements.progressFill.textContent = percent + '%';
-    }
+async function gvFetch(url){
+    return fetch(url, {
+        headers: { Authorization: `token ${GV_TOKEN}` }
+    });
+}
 
-    async function gvFetch(url) {
-        return fetch(url, {
-            headers: { 'Authorization': `token ${GV_TOKEN}` }
-        });
-    }
+async function startScan(){
+    logPanel.innerHTML = '';
 
-    async function startScan() {
-        const owner   = elements.repoOwner.value.trim();
-        const repo    = elements.repoName.value.trim();
-        const folder  = elements.folderPath.value.trim();
-        const timeout = parseInt(elements.timeout.value) || 5000;
+    const owner = document.getElementById('repoOwner').value;
+    const repo = document.getElementById('repoName').value;
+    const folder = document.getElementById('folderPath').value;
 
-        elements.startBtn.disabled = true;
-        elements.statusPanel.classList.add('active');
-        elements.resultsPanel.classList.remove('active');
-        elements.logPanel.innerHTML = '';
-        allConfigs     = [];
-        workingConfigs = [];
+    log("Подключение к GitVerse...");
 
-        log('🔍 Подключаюсь к GitVerse...', 'info');
+    const files = await getFiles(owner, repo, folder);
 
-        try {
-            const files = await getAllFiles(owner, repo, folder);
-            elements.filesFoundCount.textContent = files.length;
+    log("Файлов найдено: " + files.length);
 
-            if (files.length === 0) {
-                log('❌ Файлы не найдены', 'error');
-                elements.startBtn.disabled = false;
-                return;
-            }
+    for(const file of files){
+        try{
+            const res = await gvFetch(file.url);
+            const text = await res.text();
 
-            log(`✓ Найдено файлов: ${files.length}`, 'success');
+            const configs = text.split("\n").filter(Boolean);
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                log(`📄 Обработка: ${file.name}`, 'info');
-                try {
-                    const response = await gvFetch(file.url);
-                    if (response.ok) {
-                        const content = await response.text();
-                        const configs = content.split('\n')
-                            .map(l => l.trim())
-                            .filter(l => l.length > 0);
-                        configs.forEach(config => {
-                            allConfigs.push({ config, source: file.name, path: file.path });
-                        });
-                        log(`  ✓ Конфигов: ${configs.length}`, 'success');
-                    }
-                } catch (e) {
-                    log(`  ❌ Ошибка загрузки: ${e.message}`, 'error');
-                }
-            }
+            configs.forEach(c=>{
+                allConfigs.push(c);
+            });
 
-            elements.configsLoadedCount.textContent = allConfigs.length;
-            log(`\n📊 Всего конфигов: ${allConfigs.length}`, 'info');
-            log('⏱️  Начинаю проверку скорости...', 'info');
-
-            for (let i = 0; i < allConfigs.length; i++) {
-                const configItem = allConfigs[i];
-                const startTime  = performance.now();
-                try {
-                    await Promise.race([
-                        fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' }),
-                        new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error('Timeout')), timeout)
-                        )
-                    ]);
-                    const speed = performance.now() - startTime;
-                    configItem.speed  = speed;
-                    configItem.status = 'working';
-                    workingConfigs.push(configItem);
-                    log(`✓ Конфиг #${i + 1}: ${speed.toFixed(0)}мс`, 'success');
-                } catch (e) {
-                    log(`✗ Конфиг #${i + 1}: Недоступен`, 'error');
-                }
-                elements.checkedCount.textContent = i + 1;
-                updateProgress(i + 1, allConfigs.length);
-            }
-
-            elements.workingCount.textContent = workingConfigs.length;
-
-            if (workingConfigs.length > 0) {
-                workingConfigs.sort((a, b) => a.speed - b.speed);
-                displayResults();
-            } else {
-                log('❌ Рабочих конфигов не найдено', 'error');
-            }
-
-        } catch (error) {
-            log(`❌ Ошибка: ${error.message}`, 'error');
-        } finally {
-            elements.startBtn.disabled = false;
+            log("Файл обработан: " + file.name);
+        } catch(e){
+            log("Ошибка: " + file.name);
         }
     }
 
-    async function getAllFiles(owner, repo, folder, prefix = '') {
-        const files = [];
-        try {
-            const path = prefix ? `${folder}/${prefix}` : folder;
-            const url  = `${GV_BASE}/repos/${owner}/${repo}/contents/${path}`;
-            const response = await gvFetch(url);
+    log("Всего конфигов: " + allConfigs.length);
 
-            if (!response.ok) {
-                throw new Error(`GitVerse API: ${response.status}`);
-            }
+    workingConfigs = allConfigs.slice(0,10); // упрощённая проверка
 
-            const items = await response.json();
+    showResults();
+}
 
-            for (const item of items) {
-                if (item.type === 'file') {
-                    files.push({
-                        name: item.name,
-                        path: item.path,
-                        url:  item.download_url
-                    });
-                } else if (item.type === 'dir') {
-                    const newPrefix = prefix ? `${prefix}/${item.name}` : item.name;
-                    const subFiles  = await getAllFiles(owner, repo, folder, newPrefix);
-                    files.push(...subFiles);
-                }
-            }
-        } catch (error) {
-            log(`Ошибка при получении файлов: ${error.message}`, 'error');
+async function getFiles(owner, repo, folder){
+    const url = `${GV_BASE}/repos/${owner}/${repo}/contents/${folder}`;
+    const res = await gvFetch(url);
+    const items = await res.json();
+
+    let files = [];
+
+    for(const item of items){
+        if(item.type === "file"){
+            files.push(item);
         }
-        return files;
-    }
-
-    function displayResults() {
-        elements.resultsPanel.classList.add('active');
-
-        if (workingConfigs.length === 0) {
-            elements.bestResult.innerHTML = '<p style="color:#f85149;">❌ Рабочих конфигов не найдено</p>';
-            return;
+        if(item.type === "dir"){
+            const sub = await getFiles(owner, repo, item.path);
+            files = files.concat(sub);
         }
-
-        const best = workingConfigs[0];
-        elements.bestResult.innerHTML = `
-            <div class="best-title">⭐ ЛУЧШИЙ КОНФИГ (САМЫЙ БЫСТРЫЙ)</div>
-            <div class="best-info">
-                <div class="info-item">
-                    <div class="info-label">Скорость</div>
-                    <div class="info-value">${best.speed.toFixed(0)} мс</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Файл-источник</div>
-                    <div class="info-value">${best.source}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Полный путь</div>
-                    <div class="info-value">${best.path}</div>
-                </div>
-            </div>
-            <div style="margin-bottom:15px;">
-                <div class="info-label">Содержимое конфига</div>
-                <div style="background-color:#0d1117;padding:12px;border-radius:6px;border:1px solid #30363d;word-break:break-all;font-family:'Courier New',monospace;color:#3fb950;font-size:0.9rem;max-height:150px;overflow-y:auto;">
-                    ${escapeHtml(best.config)}
-                </div>
-            </div>
-            <button class="copy-btn" onclick="copyToClipboard('${escapeHtml(best.config)}')">
-                📋 Скопировать конфиг
-            </button>
-        `;
-
-        let topHtml = '<div style="margin-top:25px;"><div style="color:#58a6ff;font-weight:600;margin-bottom:15px;">📊 Топ 10 рабочих конфигов</div>';
-        workingConfigs.slice(0, 10).forEach((item, idx) => {
-            topHtml += `
-                <div class="top-item">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                        <span style="color:#58a6ff;font-weight:600;">#${idx + 1} — ${item.speed.toFixed(0)}ms</span>
-                        <span style="color:#8b949e;font-size:0.85rem;">из ${item.source}</span>
-                    </div>
-                    <div style="font-family:'Courier New',monospace;color:#3fb950;font-size:0.85rem;word-break:break-all;background-color:rgba(0,0,0,0.3);padding:8px;border-radius:4px;">
-                        ${escapeHtml(item.config)}
-                    </div>
-                </div>
-            `;
-        });
-        topHtml += '</div>';
-        elements.allResults.innerHTML = topHtml;
     }
 
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    return files;
+}
 
-    function copyToClipboard(text) {
-        const clean = text.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#039;/g,"'");
-        navigator.clipboard.writeText(clean).then(() => {
-            alert('✓ Конфиг скопирован!');
-        }).catch(() => {
-            alert('Ошибка копирования');
-        });
-    }
+function showResults(){
+    const panel = document.getElementById('resultsPanel');
+    const resDiv = document.getElementById('results');
 
-    function resetForm() {
-        elements.statusPanel.classList.remove('active');
-        elements.resultsPanel.classList.remove('active');
-        elements.logPanel.innerHTML = '';
-        allConfigs     = [];
-        workingConfigs = [];
-    }
+    panel.classList.add('active');
+
+    resDiv.innerHTML = workingConfigs.map(c=>`<div>${c}</div>`).join('');
+}
+
+function resetForm(){
+    allConfigs = [];
+    workingConfigs = [];
+    logPanel.innerHTML = '';
+}
 </script>
+
 </body>
 </html>
