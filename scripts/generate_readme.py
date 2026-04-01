@@ -432,8 +432,6 @@ def generate_readme(files_by_category: dict, metadata: dict) -> str:
         ""
     ])
     
-    # Сайт для проверки впн конфигураций чекер 
-    # https://ruvipien.gitverse.site/russian-white-bolt/
     
     # === ИНФОРМАЦИЯ О БЛОКИРОВКАХ ===
     lines.extend([
