@@ -1,5 +1,4 @@
 name: 🔗 Update Site Link in README
-
 on:
   workflow_dispatch:
 
@@ -24,7 +23,7 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           REPO="${{ github.event.repository.name }}"
           BRANCH="${{ github.ref_name }}"
-          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/raw/branch/${BRANCH}/index.html"
+          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/content/${BRANCH}/index.html"
           BADGE="[![🌐 Открыть сайт](https://img.shields.io/badge/🌐_Открыть_сайт-GitVerse-blue)](${SITE_URL})"
 
           if [ ! -f README.md ]; then
@@ -45,7 +44,7 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           REPO="${{ github.event.repository.name }}"
           BRANCH="${{ github.ref_name }}"
-          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/raw/branch/${BRANCH}/index.html"
+          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/content/${BRANCH}/index.html"
 
           if [ -f readme_generate.py ]; then
             if grep -q "^SITE_URL" readme_generate.py; then
