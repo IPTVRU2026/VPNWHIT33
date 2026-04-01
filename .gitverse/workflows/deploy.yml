@@ -1,64 +1,19 @@
-name: 🔗 Update Site Link in README
-on:
-  workflow_dispatch:
+stages:
+  - deploy
 
-jobs:
-  update-links:
-    runs-on: ubuntu-latest
+pages:
+  stage: deploy
+  image: alpine:latest
 
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+  script:
+    - apk add --no-cache sed
+    - sed -i "s/__GITVERSE_TOKEN__/${GITVERSE_TOKEN}/g" index.html
+    - mkdir public
+    - cp index.html public/
 
-      - name: 🔑 Настройка git авторизации
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITVERSE_TOKEN }}@gitverse.ru/${{ github.repository }}.git
+  artifacts:
+    paths:
+      - public
 
-      - name: 📝 Вставить ссылку на index.html в README
-        run: |
-          OWNER="${{ github.repository_owner }}"
-          REPO="${{ github.event.repository.name }}"
-          BRANCH="${{ github.ref_name }}"
-          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/content/${BRANCH}/index.html"
-          BADGE="[![🌐 Открыть сайт](https://img.shields.io/badge/🌐_Открыть_сайт-GitVerse-blue)](${SITE_URL})"
-
-          if [ ! -f README.md ]; then
-            echo "# ${REPO}" > README.md
-          fi
-
-          if grep -q "<!-- SITE_BADGE -->" README.md; then
-            sed -i "s|<!-- SITE_BADGE -->.*<!-- /SITE_BADGE -->|<!-- SITE_BADGE --> ${BADGE} <!-- /SITE_BADGE -->|g" README.md
-          else
-            { echo "<!-- SITE_BADGE --> ${BADGE} <!-- /SITE_BADGE -->"; echo ""; cat README.md; } > README.tmp
-            mv README.tmp README.md
-          fi
-
-          echo "✅ README обновлён. URL: ${SITE_URL}"
-
-      - name: 🔧 Вставить ссылку в readme_generate.py
-        run: |
-          OWNER="${{ github.repository_owner }}"
-          REPO="${{ github.event.repository.name }}"
-          BRANCH="${{ github.ref_name }}"
-          SITE_URL="https://gitverse.ru/${OWNER}/${REPO}/content/${BRANCH}/index.html"
-
-          if [ -f readme_generate.py ]; then
-            if grep -q "^SITE_URL" readme_generate.py; then
-              sed -i "s|^SITE_URL.*|SITE_URL = \"${SITE_URL}\"  # auto-updated by CI|" readme_generate.py
-            else
-              { echo "SITE_URL = \"${SITE_URL}\"  # auto-updated by CI"; echo ""; cat readme_generate.py; } > readme_generate.tmp
-              mv readme_generate.tmp readme_generate.py
-            fi
-            echo "✅ readme_generate.py обновлён"
-          fi
-
-      - name: 💾 Commit и push
-        run: |
-          git add README.md readme_generate.py 2>/dev/null || true
-          git diff --cached --quiet && echo "Нет изменений, пропускаем" && exit 0
-          git commit -m "ci: обновлена ссылка на index.html [skip ci]"
-          git push origin HEAD:${{ github.ref_name }}
+  only:
+    - master
