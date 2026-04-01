@@ -34,32 +34,199 @@
             padding: 25px;
             margin-bottom: 25px;
         }
-        input {
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #c9d1d9;
+            font-weight: 500;
+        }
+        input, select {
             width: 100%;
             padding: 12px;
             background: #0d1117;
             border: 1px solid #30363d;
             color: #c9d1d9;
             border-radius: 6px;
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #58a6ff;
         }
         .btn {
             padding: 12px 20px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
         }
-        .btn-primary { background: #238636; color: white; }
-        .btn-secondary { background: transparent; border: 1px solid #58a6ff; color: #58a6ff; }
+        .btn-primary { 
+            background: #238636; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background: #2ea043;
+        }
+        .btn-secondary { 
+            background: transparent; 
+            border: 1px solid #58a6ff; 
+            color: #58a6ff; 
+        }
+        .btn-secondary:hover {
+            background: rgba(88,166,255,0.1);
+        }
+        .btn-danger {
+            background: #da3633;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #f85149;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
         .status-panel, .results-panel { display: none; }
         .active { display: block; }
 
         .log-panel {
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
             background: #0d1117;
-            padding: 10px;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #21262d;
             font-family: monospace;
+        }
+        .log-info { color: #58a6ff; }
+        .log-success { color: #3fb950; }
+        .log-error { color: #f85149; }
+        .log-warning { color: #daaa0f; }
+
+        .progress-bar {
+            height: 4px;
+            background-color: #0d1117;
+            border-radius: 2px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #238636;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .config-item {
+            padding: 12px;
+            border-bottom: 1px solid #30363d;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            position: relative;
+        }
+        .config-item:last-child { border-bottom: none; }
+        .config-status {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+        .status-working {
+            background-color: rgba(63, 185, 80, 0.2);
+            color: #3fb950;
+        }
+        .status-checking {
+            background-color: rgba(88, 166, 255, 0.2);
+            color: #58a6ff;
+        }
+        .config-domain {
+            font-size: 0.7rem;
+            color: #8b949e;
+            margin-top: 5px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .badge-guaranteed {
+            background-color: rgba(218, 170, 15, 0.2);
+            color: #daaa0f;
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .config-count {
+            background-color: #238636;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .filter-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        hr {
+            border-color: #30363d;
+            margin: 15px 0;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 0 10px; }
+            .title { font-size: 1.8rem; }
+            .filter-group { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
@@ -67,6 +234,7 @@
 <body>
 
 <script>
+    // Токен из GitVerse (заменяется при деплое)
     window.GITVERSE_TOKEN = "__GITVERSE_TOKEN__";
 </script>
 
@@ -74,36 +242,78 @@
 
 <header>
     <h1 class="title">⚡ Русский Белый Болт</h1>
-    <p class="subtitle">Сканер конфигов</p>
+    <p class="subtitle">Сканер рабочих конфигураций с проверкой работоспособности</p>
 </header>
 
 <div class="panel">
-    <label>Репозиторий</label>
-    <input id="repoOwner" value="RUVIPIEN" readonly>
-
-    <label>Название</label>
-    <input id="repoName" value="russian-white-bolt" readonly>
-
-    <label>Папка</label>
-    <input id="folderPath" value="VPNMIRRORS">
-
-    <label>Timeout</label>
-    <input id="timeout" value="5000">
-
-    <br><br>
-
-    <button class="btn btn-primary" onclick="startScan()">Старт</button>
-    <button class="btn btn-secondary" onclick="resetForm()">Сброс</button>
+    <div class="form-group">
+        <label><i class="fas fa-code-branch"></i> Репозиторий (владелец)</label>
+        <input id="repoOwner" value="RUVIPIEN" readonly>
+    </div>
+    
+    <div class="form-group">
+        <label><i class="fas fa-book"></i> Название репозитория</label>
+        <input id="repoName" value="russian-white-bolt" readonly>
+    </div>
+    
+    <div class="form-group">
+        <label><i class="fas fa-folder"></i> Папка с конфигами</label>
+        <input id="folderPath" value="VPNMIRRORS">
+    </div>
+    
+    <div class="form-group">
+        <label><i class="fas fa-clock"></i> Таймаут проверки (мс)</label>
+        <input id="timeout" value="5000" type="number">
+    </div>
+    
+    <hr>
+    
+    <div class="filter-group">
+        <label>
+            <input type="checkbox" id="fastModeV2" checked>
+            <i class="fas fa-bolt"></i> Быстрый режим (параллельная проверка)
+        </label>
+        <label>
+            <input type="checkbox" id="checkConfigs" checked>
+            <i class="fas fa-check-circle"></i> Проверять работоспособность
+        </label>
+    </div>
+    
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="startScan()" id="startBtn">
+            <i class="fas fa-play"></i> Начать сканирование
+        </button>
+        <button class="btn btn-secondary" onclick="resetForm()">
+            <i class="fas fa-redo"></i> Сбросить
+        </button>
+    </div>
 </div>
 
 <div id="statusPanel" class="panel status-panel active">
-    <div>Логи:</div>
+    <div style="margin-bottom: 10px;">
+        <i class="fas fa-terminal"></i> Лог сканирования
+        <span style="float: right;" id="progressText">Готов к работе</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
     <div id="logPanel" class="log-panel"></div>
 </div>
 
 <div id="resultsPanel" class="panel results-panel">
-    <h3>Результаты</h3>
-    <div id="results"></div>
+    <div class="results-header">
+        <h3><i class="fas fa-list"></i> Найденные конфиги</h3>
+        <div class="config-count" id="configCount">0 конфигов</div>
+    </div>
+    <div id="results" style="max-height: 400px; overflow-y: auto;"></div>
+    <div class="actions">
+        <button class="btn btn-secondary" onclick="copyAllConfigs()">
+            <i class="fas fa-copy"></i> Копировать все
+        </button>
+        <button class="btn btn-secondary" onclick="downloadConfigs()">
+            <i class="fas fa-download"></i> Скачать
+        </button>
+    </div>
 </div>
 
 </div>
@@ -114,93 +324,450 @@ const GV_BASE = "https://gitverse.ru/api/v1";
 
 let allConfigs = [];
 let workingConfigs = [];
+let isScanning = false;
 
 const logPanel = document.getElementById('logPanel');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const startBtn = document.getElementById('startBtn');
 
-function log(msg){
+function addLog(message, type = 'info') {
     const div = document.createElement('div');
-    div.textContent = msg;
+    div.className = `log-entry log-${type}`;
+    const time = new Date().toLocaleTimeString();
+    div.innerHTML = `<span style="color:#6e7681;">[${time}]</span> ${message}`;
     logPanel.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function gvFetch(url){
-    return fetch(url, {
+function updateProgress(percent, text) {
+    progressFill.style.width = `${percent}%`;
+    progressText.textContent = text;
+}
+
+async function gvFetch(url) {
+    const response = await fetch(url, {
         headers: { Authorization: `token ${GV_TOKEN}` }
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+    return response;
+}
+
+async function getFiles(owner, repo, folder, path = '') {
+    const fullPath = path ? `${folder}/${path}` : folder;
+    const url = `${GV_BASE}/repos/${owner}/${repo}/contents/${fullPath}`;
+    
+    try {
+        const res = await gvFetch(url);
+        const items = await res.json();
+        
+        let files = [];
+        
+        for (const item of items) {
+            if (item.type === 'file' && (item.name.endsWith('.txt') || item.name.endsWith('.cfg') || item.name === 'wcfg')) {
+                files.push({
+                    name: item.name,
+                    path: item.path,
+                    url: item.download_url || `${GV_BASE}/repos/${owner}/${repo}/raw/${item.path}`
+                });
+            } else if (item.type === 'dir') {
+                const subFiles = await getFiles(owner, repo, folder, item.path);
+                files = files.concat(subFiles);
+            }
+        }
+        
+        return files;
+    } catch (error) {
+        addLog(`Ошибка получения списка файлов: ${error.message}`, 'error');
+        return [];
+    }
+}
+
+// Извлечение домена и порта из конфига
+function extractDomainAndPort(config) {
+    // vless:// или vmess:// формат
+    let match = config.match(/@([a-zA-Z0-9.-]+):(\d+)/);
+    if (match) {
+        return { domain: match[1], port: parseInt(match[2]) };
+    }
+    
+    // Другой формат
+    match = config.match(/@([a-zA-Z0-9.-]+)(?:[?/#]|$)/);
+    if (match) {
+        return { domain: match[1], port: 443 };
+    }
+    
+    return null;
+}
+
+// Проверка DNS через Cloudflare
+async function checkDNS(domain) {
+    if (!domain) return { success: false, error: 'Нет домена' };
+    
+    try {
+        const cleanDomain = domain.replace(/[^a-zA-Z0-9.-]/g, '');
+        const response = await fetch(
+            `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(cleanDomain)}&type=A`,
+            { headers: { 'Accept': 'application/dns-json' } }
+        );
+        
+        if (!response.ok) return { success: false, error: `HTTP ${response.status}` };
+        
+        const data = await response.json();
+        
+        if (data.Answer && data.Answer.length > 0) {
+            const ips = data.Answer.map(a => a.data).join(', ');
+            return { success: true, ips: ips };
+        }
+        
+        return { success: false, error: 'Нет DNS записей' };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// Проверка WebSocket
+async function checkWebSocket(domain, port, timeout = 5000) {
+    if (!domain || !port) return { success: false, error: 'Нет данных' };
+    
+    return new Promise((resolve) => {
+        const protocol = port === 443 || port === 8443 ? 'wss' : 'ws';
+        const url = `${protocol}://${domain}:${port}`;
+        
+        const timeoutId = setTimeout(() => {
+            ws.close();
+            resolve({ success: false, error: 'Таймаут' });
+        }, timeout);
+        
+        const ws = new WebSocket(url);
+        
+        ws.onopen = () => {
+            clearTimeout(timeoutId);
+            ws.close();
+            resolve({ success: true, protocol: protocol });
+        };
+        
+        ws.onerror = () => {
+            clearTimeout(timeoutId);
+            resolve({ success: false, error: 'Ошибка соединения' });
+        };
+        
+        ws.onclose = () => {
+            clearTimeout(timeoutId);
+        };
     });
 }
 
-async function startScan(){
-    logPanel.innerHTML = '';
+// Проверка одного конфига
+async function checkConfig(config, timeout) {
+    const domainInfo = extractDomainAndPort(config);
+    
+    if (!domainInfo) {
+        return {
+            config: config,
+            working: false,
+            dns: false,
+            ws: false,
+            error: 'Не удалось извлечь домен'
+        };
+    }
+    
+    const dnsResult = await checkDNS(domainInfo.domain);
+    let wsResult = { success: false };
+    
+    if (dnsResult.success) {
+        wsResult = await checkWebSocket(domainInfo.domain, domainInfo.port, timeout);
+    }
+    
+    const working = wsResult.success || (dnsResult.success && !wsResult.success);
+    
+    return {
+        config: config,
+        working: working,
+        dns: dnsResult.success,
+        ws: wsResult.success,
+        domain: domainInfo.domain,
+        port: domainInfo.port,
+        dnsIps: dnsResult.ips,
+        error: !dnsResult.success ? dnsResult.error : (!wsResult.success ? wsResult.error : null)
+    };
+}
 
+// Параллельная проверка всех конфигов
+async function checkConfigsParallel(configs, timeout, onProgress) {
+    const results = [];
+    let completed = 0;
+    
+    const promises = configs.map(async (config, idx) => {
+        const result = await checkConfig(config, timeout);
+        completed++;
+        if (onProgress) onProgress(completed, configs.length, result);
+        return result;
+    });
+    
+    return await Promise.all(promises);
+}
+
+// Последовательная проверка
+async function checkConfigsSequential(configs, timeout, onProgress) {
+    const results = [];
+    
+    for (let i = 0; i < configs.length; i++) {
+        const result = await checkConfig(configs[i], timeout);
+        results.push(result);
+        if (onProgress) onProgress(i + 1, configs.length, result);
+    }
+    
+    return results;
+}
+
+async function startScan() {
+    if (isScanning) return;
+    isScanning = true;
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<span class="spinner"></span> Сканирование...';
+    
+    logPanel.innerHTML = '';
+    updateProgress(0, 'Инициализация...');
+    
     const owner = document.getElementById('repoOwner').value;
     const repo = document.getElementById('repoName').value;
     const folder = document.getElementById('folderPath').value;
-
-    log("Подключение к GitVerse...");
-
-    const files = await getFiles(owner, repo, folder);
-
-    log("Файлов найдено: " + files.length);
-
-    for(const file of files){
-        try{
-            const res = await gvFetch(file.url);
-            const text = await res.text();
-
-            const configs = text.split("\n").filter(Boolean);
-
-            configs.forEach(c=>{
-                allConfigs.push(c);
-            });
-
-            log("Файл обработан: " + file.name);
-        } catch(e){
-            log("Ошибка: " + file.name);
+    const timeout = parseInt(document.getElementById('timeout').value) || 5000;
+    const fastMode = document.getElementById('fastModeV2').checked;
+    const checkEnabled = document.getElementById('checkConfigs').checked;
+    
+    addLog(`🔍 Подключение к GitVerse: ${owner}/${repo}/${folder}`, 'info');
+    
+    try {
+        // Получение списка файлов
+        updateProgress(10, 'Получение списка файлов...');
+        const files = await getFiles(owner, repo, folder);
+        
+        addLog(`📁 Найдено файлов: ${files.length}`, 'success');
+        
+        if (files.length === 0) {
+            addLog(`⚠️ В папке "${folder}" не найдено файлов с конфигами`, 'warning');
+            updateProgress(100, 'Завершено');
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Начать сканирование';
+            isScanning = false;
+            return;
         }
+        
+        // Загрузка всех конфигов
+        updateProgress(20, 'Загрузка конфигураций...');
+        allConfigs = [];
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            try {
+                const res = await gvFetch(file.url);
+                const text = await res.text();
+                const configs = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+                
+                for (const cfg of configs) {
+                    if (cfg.trim() && !allConfigs.includes(cfg.trim())) {
+                        allConfigs.push(cfg.trim());
+                    }
+                }
+                
+                addLog(`📄 ${file.name}: +${configs.length} конфигов`, 'info');
+                updateProgress(20 + Math.round((i / files.length) * 30), `Загрузка: ${i+1}/${files.length}`);
+            } catch (error) {
+                addLog(`❌ Ошибка загрузки ${file.name}: ${error.message}`, 'error');
+            }
+        }
+        
+        addLog(`📊 Всего уникальных конфигов: ${allConfigs.length}`, 'success');
+        
+        if (allConfigs.length === 0) {
+            addLog(`⚠️ Не найдено конфигураций для проверки`, 'warning');
+            updateProgress(100, 'Завершено');
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Начать сканирование';
+            isScanning = false;
+            return;
+        }
+        
+        // Проверка работоспособности
+        if (checkEnabled) {
+            updateProgress(50, `Проверка конфигов... (0/${allConfigs.length})`);
+            addLog(`🔬 Проверка работоспособности (таймаут: ${timeout}мс, режим: ${fastMode ? 'параллельный' : 'последовательный'})`, 'info');
+            
+            let results;
+            
+            if (fastMode) {
+                results = await checkConfigsParallel(allConfigs, timeout, (completed, total, result) => {
+                    const percent = 50 + Math.round((completed / total) * 45);
+                    updateProgress(percent, `Проверка: ${completed}/${total}`);
+                    
+                    if (result.working) {
+                        addLog(`✅ Рабочий: ${result.config.substring(0, 60)}...`, 'success');
+                    }
+                });
+            } else {
+                results = await checkConfigsSequential(allConfigs, timeout, (completed, total, result) => {
+                    const percent = 50 + Math.round((completed / total) * 45);
+                    updateProgress(percent, `Проверка: ${completed}/${total}`);
+                    
+                    if (result.working) {
+                        addLog(`✅ Рабочий: ${result.config.substring(0, 60)}...`, 'success');
+                    }
+                });
+            }
+            
+            workingConfigs = results.filter(r => r.working);
+        } else {
+            workingConfigs = allConfigs.map(c => ({ config: c, working: true }));
+        }
+        
+        updateProgress(95, 'Формирование результатов...');
+        
+        // Сортировка: сначала рабочие, затем остальные
+        workingConfigs.sort((a, b) => {
+            if (a.working && !b.working) return -1;
+            if (!a.working && b.working) return 1;
+            return 0;
+        });
+        
+        const workingCount = workingConfigs.filter(c => c.working).length;
+        addLog(`✨ Готово! Найдено рабочих конфигов: ${workingCount} из ${allConfigs.length}`, 'success');
+        
+        updateProgress(100, 'Завершено');
+        showResults();
+        
+    } catch (error) {
+        addLog(`❌ Критическая ошибка: ${error.message}`, 'error');
+        updateProgress(100, 'Ошибка');
     }
-
-    log("Всего конфигов: " + allConfigs.length);
-
-    workingConfigs = allConfigs.slice(0,10); // упрощённая проверка
-
-    showResults();
+    
+    startBtn.disabled = false;
+    startBtn.innerHTML = '<i class="fas fa-play"></i> Начать сканирование';
+    isScanning = false;
 }
 
-async function getFiles(owner, repo, folder){
-    const url = `${GV_BASE}/repos/${owner}/${repo}/contents/${folder}`;
-    const res = await gvFetch(url);
-    const items = await res.json();
-
-    let files = [];
-
-    for(const item of items){
-        if(item.type === "file"){
-            files.push(item);
-        }
-        if(item.type === "dir"){
-            const sub = await getFiles(owner, repo, item.path);
-            files = files.concat(sub);
-        }
+function showResults() {
+    const resultsPanel = document.getElementById('resultsPanel');
+    const resultsDiv = document.getElementById('results');
+    const configCountSpan = document.getElementById('configCount');
+    
+    const workingOnly = workingConfigs.filter(c => c.working);
+    configCountSpan.textContent = `${workingOnly.length} рабочих конфигов`;
+    
+    if (workingOnly.length === 0) {
+        resultsDiv.innerHTML = '<div style="text-align: center; padding: 40px; color: #8b949e;">😔 Рабочих конфигов не найдено</div>';
+    } else {
+        resultsDiv.innerHTML = workingOnly.map((item, idx) => {
+            const config = typeof item === 'string' ? item : item.config;
+            const domain = typeof item !== 'string' && item.domain ? item.domain : '';
+            const wsWorking = typeof item !== 'string' && item.ws;
+            const dnsWorking = typeof item !== 'string' && item.dns;
+            
+            let statusText = '';
+            if (wsWorking) statusText = '<span class="config-status status-working"><i class="fas fa-globe"></i> WebSocket ✓</span>';
+            else if (dnsWorking) statusText = '<span class="config-status status-working"><i class="fas fa-dns"></i> DNS ✓</span>';
+            else statusText = '<span class="config-status status-working"><i class="fas fa-check"></i> Доступен</span>';
+            
+            return `
+                <div class="config-item" data-config="${escapeHtml(config)}">
+                    <div>
+                        <strong>${idx + 1}.</strong> 
+                        <code style="word-break: break-all;">${escapeHtml(config.substring(0, 100))}${config.length > 100 ? '...' : ''}</code>
+                        ${statusText}
+                    </div>
+                    ${domain ? `<div class="config-domain"><i class="fas fa-server"></i> ${escapeHtml(domain)}</div>` : ''}
+                </div>
+            `;
+        }).join('');
     }
-
-    return files;
+    
+    resultsPanel.classList.add('active');
+    document.getElementById('statusPanel').classList.add('active');
 }
 
-function showResults(){
-    const panel = document.getElementById('resultsPanel');
-    const resDiv = document.getElementById('results');
-
-    panel.classList.add('active');
-
-    resDiv.innerHTML = workingConfigs.map(c=>`<div>${c}</div>`).join('');
+function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
-function resetForm(){
+function copyAllConfigs() {
+    const workingOnly = workingConfigs.filter(c => c.working);
+    if (workingOnly.length === 0) {
+        addLog('⚠️ Нет рабочих конфигов для копирования', 'warning');
+        return;
+    }
+    
+    const configsText = workingOnly.map(c => typeof c === 'string' ? c : c.config).join('\n');
+    
+    navigator.clipboard.writeText(configsText).then(() => {
+        addLog(`📋 Скопировано ${workingOnly.length} конфигов в буфер обмена`, 'success');
+        
+        const copyBtn = document.querySelector('.actions .btn-secondary');
+        if (copyBtn) {
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 2000);
+        }
+    }).catch(() => {
+        addLog('❌ Не удалось скопировать конфиги', 'error');
+    });
+}
+
+function downloadConfigs() {
+    const workingOnly = workingConfigs.filter(c => c.working);
+    if (workingOnly.length === 0) {
+        addLog('⚠️ Нет рабочих конфигов для скачивания', 'warning');
+        return;
+    }
+    
+    const configsText = workingOnly.map(c => typeof c === 'string' ? c : c.config).join('\n');
+    const blob = new Blob([configsText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `russian-white-bolt_${new Date().toISOString().slice(0,19)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addLog(`💾 Скачано ${workingOnly.length} конфигов`, 'success');
+}
+
+function resetForm() {
+    if (isScanning) return;
+    
     allConfigs = [];
     workingConfigs = [];
     logPanel.innerHTML = '';
+    updateProgress(0, 'Готов к работе');
+    addLog('🔄 Сброс выполнен', 'info');
+    
+    document.getElementById('resultsPanel').classList.remove('active');
+    document.getElementById('statusPanel').classList.add('active');
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('configCount').textContent = '0 конфигов';
 }
+
+// Проверка токена при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+    if (!GV_TOKEN || GV_TOKEN === '__GITVERSE_TOKEN__') {
+        addLog('⚠️ Внимание: Токен GitVerse не настроен! Для работы сканера необходимо указать GITVERSE_TOKEN', 'warning');
+    } else {
+        addLog('✅ GitVerse токен найден, готов к работе', 'success');
+    }
+});
 </script>
 
 </body>
-</html>
+    </html>
