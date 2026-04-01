@@ -1,8 +1,6 @@
-name🔗 Update Site Link in README
+name: 🔗 Update Site Link in README
 
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
 
 jobs:
