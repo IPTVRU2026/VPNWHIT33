@@ -20,7 +20,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./          # корень репо — там лежит index.html
+          publish_dir: ./
           publish_branch: gh-pages
           force_orphan: true
 
@@ -30,12 +30,11 @@ jobs:
           REPO="${{ github.event.repository.name }}"
           SITE_URL="https://${OWNER}.gitverse.ru/${REPO}/"
 
-          # Вставляем/обновляем блок со ссылкой в README.md
           if grep -q "<!-- SITE_BADGE -->" README.md 2>/dev/null; then
-            sed -i "s|<!-- SITE_BADGE -->.*<!-- /SITE_BADGE -->|<!-- SITE_BADGE --> [![🌐 Открыть сайт](https://img.shields.io/badge/🌐_Сайт-${SITE_URL}-blue)](${SITE_URL}) <!-- /SITE_BADGE -->|g" README.md
+            sed -i "s|<!-- SITE_BADGE -->.*<!-- /SITE_BADGE -->|<!-- SITE_BADGE --> [![🌐 Открыть сайт](https://img.shields.io/badge/Site-GitVerse-blue)](${SITE_URL}) <!-- /SITE_BADGE -->|g" README.md
           else
-            # Добавляем в начало файла, если маркера нет
-            printf "<!-- SITE_BADGE --> [![🌐 Открыть сайт](https://img.shields.io/badge/🌐_Сайт-GitVerse_Pages-blue)](${SITE_URL}) <!-- /SITE_BADGE -->\n\n$(cat README.md)" > README.md
+            { echo "<!-- SITE_BADGE --> [![🌐 Открыть сайт](https://img.shields.io/badge/Site-GitVerse-blue)](${SITE_URL}) <!-- /SITE_BADGE -->"; echo ""; cat README.md; } > README.tmp
+            mv README.tmp README.md
           fi
 
           echo "Site URL: ${SITE_URL}"
@@ -47,11 +46,11 @@ jobs:
           SITE_URL="https://${OWNER}.gitverse.ru/${REPO}/"
 
           if [ -f readme_generate.py ]; then
-            # Заменяем или добавляем переменную SITE_URL в скрипте
             if grep -q "^SITE_URL" readme_generate.py; then
               sed -i "s|^SITE_URL.*|SITE_URL = \"${SITE_URL}\"  # auto-updated by CI|" readme_generate.py
             else
-              sed -i "1s|^|SITE_URL = \"${SITE_URL}\"  # auto-updated by CI\n|" readme_generate.py
+              { echo "SITE_URL = \"${SITE_URL}\"  # auto-updated by CI"; echo ""; cat readme_generate.py; } > readme_generate.tmp
+              mv readme_generate.tmp readme_generate.py
             fi
           fi
 
